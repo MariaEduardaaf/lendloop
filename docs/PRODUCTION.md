@@ -34,7 +34,6 @@ changes I would make before real neighbors used it, most important first.
 - Clerk production instance, verified e-mail required, MFA required for admins.
 - Roles managed in one place with an approval step and an audit trail that names the operator.
   Today a role change from the CLI is logged without an actor.
-- A reduced JWT template: the app reads only the first name and the e-mail.
 
 ## Privacy and data
 

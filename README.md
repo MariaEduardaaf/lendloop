@@ -45,16 +45,29 @@ through a tunnel and use the deployment's `.convex.site` URL as `CONVEX_SITE_URL
 
 1. Create an application in the Clerk dashboard with e-mail as a sign-in method. The app needs an
    e-mail address for every user, because that is where notifications go.
-2. Activate the Convex integration for it (it creates a JWT template named `convex`) and copy the
-   Frontend API URL, for example `https://your-app.clerk.accounts.dev`.
-3. Add the API keys to `.env.local`:
+2. Activate the Convex integration for it at https://dashboard.clerk.com/apps/setup/convex and copy
+   the Frontend API URL it shows, for example `https://your-app.clerk.accounts.dev`.
+3. The integration adds only `"aud": "convex"` to the session token. LendLoop also needs the user's
+   e-mail and first name, so open Configure, Sessions, Customize session token and add two claims:
+
+   ```json
+   {
+     "email": "{{user.primary_email_address}}",
+     "given_name": "{{user.first_name}}"
+   }
+   ```
+
+   These are the only personal fields in the token, and the only ones the app reads. A user who
+   signs up without a first name is shown as "Neighbor". To avoid that, turn on Require first and
+   last name under User & authentication, User model.
+4. Add the API keys (Configure, API keys) to `.env.local`:
 
    ```bash
    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
    CLERK_SECRET_KEY=sk_test_...
    ```
 
-4. Tell Convex which issuer to trust:
+5. Tell Convex which issuer to trust:
 
    ```bash
    npx convex env set CLERK_JWT_ISSUER_DOMAIN https://your-app.clerk.accounts.dev
