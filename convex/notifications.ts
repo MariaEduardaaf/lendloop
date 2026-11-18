@@ -25,9 +25,9 @@ function parseEventId(eventId: string): { loanId: string; type: NotificationType
 }
 
 /**
- * Builds the payload n8n receives. Data minimization: the recipient's first name and
- * email (needed to send the message), the other party's first name, the tool name and
- * the loan dates. No ids of users, no phone, no address, no description.
+ * Builds the payload n8n receives, with only what the message needs: the event id and
+ * type, the recipient's first name and e-mail, the other party's first name, the tool
+ * name and the loan dates. No ids of users, no status, no description.
  */
 export const buildPayload = internalQuery({
   args: { eventId: v.string() },
@@ -53,12 +53,10 @@ export const buildPayload = internalQuery({
     return {
       eventId,
       type: parsed.type,
-      occurredAt: new Date().toISOString(),
-      loanId,
       recipient: { firstName: recipient.firstName, email: recipient.email },
       counterpartyFirstName: counterparty.firstName,
       tool: { name: tool.name },
-      loan: { startDate: loan.startDate, endDate: loan.endDate, status: loan.status },
+      loan: { startDate: loan.startDate, endDate: loan.endDate },
     };
   },
 });
@@ -140,7 +138,11 @@ export const deliver = internalAction({
           body: rawBody,
           signal: AbortSignal.timeout(10_000),
         });
-        if (!response.ok) error = `HTTP ${response.status}`;
+        if (!response.ok) {
+          error = `HTTP ${response.status}`;
+          // A 4xx means n8n rejected the event (signature or payload). Sending it again cannot help.
+          retryable = response.status >= 500 || response.status === 408 || response.status === 429;
+        }
       } catch {
         error = "Network error"; // never log the payload or the exception text: they may hold personal data
       }

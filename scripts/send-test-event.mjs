@@ -19,11 +19,11 @@ export function loadEnv(file = new URL("../.env", import.meta.url)) {
 
 export function sampleEvent({ type = "request.created", eventId = `demo-loan:${randomUUID()}:${type}`, to = "ana@example.com" } = {}) {
   return {
-    eventId, type, occurredAt: new Date().toISOString(), loanId: "demo-loan",
+    eventId, type,
     recipient: { firstName: "Ana", email: to },
     counterpartyFirstName: "Ben",
     tool: { name: "Cordless drill" },
-    loan: { startDate: "2026-11-20", endDate: "2026-11-22", status: type === "request.created" ? "pending" : "approved" },
+    loan: { startDate: "2026-11-20", endDate: "2026-11-22" },
   };
 }
 

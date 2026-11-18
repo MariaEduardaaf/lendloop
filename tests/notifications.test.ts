@@ -37,18 +37,17 @@ const scheduled = (t: Awaited<ReturnType<typeof pendingLoan>>["t"]) =>
 
 describe("notification payload", () => {
   it("holds only the fields the workflow needs", async () => {
-    const { t, loanId, eventId } = await pendingLoan();
+    const { t, eventId } = await pendingLoan();
     const payload = await t.query(internal.notifications.buildPayload, { eventId });
 
+    // toEqual is exact: a new field in the payload has to be added here on purpose.
     expect(payload).toEqual({
       eventId,
       type: "request.created",
-      occurredAt: expect.any(String),
-      loanId,
       recipient: { firstName: "Ana", email: "ana@example.com" }, // the owner hears about new requests
       counterpartyFirstName: "Ben",
       tool: { name: "Cordless drill" },
-      loan: { startDate: expect.any(String), endDate: expect.any(String), status: "pending" },
+      loan: { startDate: expect.any(String), endDate: expect.any(String) },
     });
   });
 
@@ -103,6 +102,16 @@ describe("notifications.deliver", () => {
     const next = await scheduled(t);
     expect(next).toHaveLength(1);
     expect(next[0].args[0]).toEqual({ eventId, attempt: 2 });
+  });
+
+  it("does not retry an event that n8n rejected, and records the failure at once", async () => {
+    const { t, eventId } = await pendingLoan();
+    fetchMock.mockResolvedValue(new Response("nope", { status: 401 }));
+
+    await t.action(internal.notifications.deliver, { eventId, attempt: 1 });
+
+    expect(await scheduled(t)).toHaveLength(0);
+    expect((await outcomes(t))[0]).toMatchObject({ status: "failed", attempts: 1, lastError: "HTTP 401" });
   });
 
   it("records a failure with a short error after the last attempt", async () => {
