@@ -5,9 +5,11 @@ changes I would make before real neighbors used it, most important first.
 
 ## Reliability of the automation
 
-- **Reconcile accepted events.** n8n acknowledges an event before sending the e-mail. Convex should
-  record the hand-off and run a periodic job that finds events accepted more than a few minutes ago
-  with no reported result, then alerts or sends them again.
+- **An outbox with reconciliation.** Today an event exists only as a scheduled action until n8n
+  reports its result, and both Convex (actions run at most once) and n8n (it acknowledges before
+  sending) can drop it in a crash. Convex should write each event to an outbox table in the same
+  mutation that changes the loan, and a periodic job should resend or alert on events that have no
+  result after a few minutes.
 - **Retry failed e-mails over a longer window.** Three quick tries cover a blip, not an outage.
   A queue with backoff over hours, or a mail provider that queues for you, covers the rest.
 - **n8n in queue mode.** Postgres instead of SQLite, Redis, separate webhook and worker processes,
@@ -18,9 +20,9 @@ changes I would make before real neighbors used it, most important first.
 
 ## Secrets and access
 
-- **A secrets manager** (AWS Secrets Manager or similar) instead of env files, with rotation. The
-  signature already carries a version (`v1`), so the receivers can accept an old and a new secret
-  during a rotation window.
+- **A secrets manager** (AWS Secrets Manager or similar) instead of env files, with rotation. To
+  rotate without downtime the receivers would accept both the current and the previous secret for
+  a short window. The code accepts one secret today.
 - **Stop exposing the environment to n8n nodes.** Move the HMAC secrets to n8n credentials or
   external secrets and turn `N8N_BLOCK_ENV_ACCESS_IN_NODE` back on.
 - **n8n behind TLS and SSO**, not reachable from the internet except for the webhook path. Restrict

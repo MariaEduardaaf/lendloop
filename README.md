@@ -43,7 +43,8 @@ through a tunnel and use the deployment's `.convex.site` URL as `CONVEX_SITE_URL
 
 ### 2. Connect Clerk
 
-1. Create an application in the Clerk dashboard. E-mail sign-in is enough.
+1. Create an application in the Clerk dashboard with e-mail as a sign-in method. The app needs an
+   e-mail address for every user, because that is where notifications go.
 2. Activate the Convex integration for it (it creates a JWT template named `convex`) and copy the
    Frontend API URL, for example `https://your-app.clerk.accounts.dev`.
 3. Add the API keys to `.env.local`:
@@ -159,7 +160,8 @@ docker compose stop mailpit
 docker compose start mailpit
 ```
 
-The loan shows "Notification failed", and the admin page lists the failed run under Workflow errors.
+The loan shows "Notification failed", and the admin page lists the failed run under Recent workflow
+errors.
 
 ## Architecture
 
@@ -217,10 +219,13 @@ hides buttons the server would refuse, it never decides.
   Cancel their own pending request. Approve, decline or mark as returned only on their own tools.
 - Admins: remove any listing, see all loans and users, set the Trusted Lender flag, see workflow errors.
 - Loan rules: no past start date, at most 30 days, at most 90 days ahead, one pending request per
-  borrower and tool, no approval that overlaps another approved loan. An owner cannot remove a tool
-  that has an approved loan not yet returned. Removing a tool declines its pending requests and
-  notifies the borrowers.
-- "Today" is the UTC date on the server.
+  borrower and tool, no approval that overlaps another approved loan, no approval of a request
+  whose dates have already passed. An owner cannot remove a tool that has an approved loan not yet
+  returned. Removing a tool declines its pending requests and notifies the borrowers.
+- "Today" is the UTC date. Mutations read it from the server clock. Queries receive it as an
+  argument, because Convex caches a query result until the data it read changes, and a cached
+  query cannot notice that the day changed. The argument only moves display flags (available,
+  overdue), never a rule.
 
 ## Automation with n8n
 
@@ -236,8 +241,8 @@ the loan, so the change and the notification commit together.
 2. n8n verifies the signature over the raw body, rejects anything invalid (401) or malformed (400),
    and drops event ids it has already seen (200, `duplicate: true`).
 3. n8n answers 202, then sends the e-mail (three tries).
-4. n8n reports the result (`sent` or `failed`) to Convex with a signed `POST /n8n/notifications`.
-   Convex stores it on the loan, idempotently.
+4. n8n reports the result (`sent` or `failed`) to Convex with a signed `POST /n8n/notifications`
+   (five tries). Convex stores it on the loan, idempotently.
 5. If the e-mail failed, the run also ends as failed, which triggers the error workflow.
 
 Why the webhook answers before the e-mail is sent: the first version answered afterwards and Convex
@@ -265,14 +270,16 @@ idempotent on the execution id. Admins see the list in the app.
 | Failure | Result |
 | --- | --- |
 | n8n is down, unreachable or answers 5xx | Convex retries the hand-off after 5 s, 30 s, 2 min and 10 min. After the fifth attempt the loan shows "Notification failed". |
+| n8n rejects the event (4xx) | Stored as failed at once. Sending a rejected event again cannot help. |
 | The same event arrives twice | n8n drops the second one by event id. One e-mail. |
-| The mail server is down | Three tries in the node, then the result is reported as failed, the run fails and the error workflow reports it. |
-| A write-back to Convex fails | The HTTP node retries three times, then the run fails and the error workflow fires. |
+| A notification e-mail fails | Three tries in the node, then the result is reported as failed, the run fails and the error workflow reports it. |
+| A reminder e-mail fails | Three tries in the node, then stored as failed on the loan and tried again on the next run. The run itself continues with the other loans. |
+| A call from n8n to Convex fails | The HTTP node tries five times, 5 s apart. Then the run fails and the error workflow fires. A reminder run stops at that loan on purpose: e-mails that cannot be recorded would be sent again by the next run. |
 | A write-back is repeated | Convex updates the same row. A sent result is never downgraded to failed. |
-| A reminder e-mail fails | Stored as failed on the loan and tried again on the next run. |
 | A request is forged, altered, replayed later or sent to another endpoint | 401, with no detail about why. |
 
-Each row of this table is covered by a test, see [Tests](#tests).
+Each row of this table is covered by a test, see [Tests](#tests). The error workflow reports to
+Convex too, so while Convex itself is unreachable a failed run is visible only in n8n's execution list.
 
 ## Security decisions
 
@@ -307,8 +314,9 @@ contain none. The exported SMTP credential points at the local Mailpit and has n
 execution id). Retries update a row, they do not add one.
 
 **Input validation at every edge.** Convex validators on all function arguments, explicit length
-and date checks, manual validation of the JSON bodies n8n sends, a body size cap, and a
-notification e-mail built from fields with control characters stripped.
+and date checks, manual validation of the JSON bodies n8n sends and a body size cap. Tool names and
+first names are reduced to a single line when they are stored, since they end up in e-mail subjects
+and greetings, and the notification workflow strips control characters again before building the message.
 
 **Errors without personal data.** Stored error texts are short and fixed ("HTTP 503",
 "Network error") or have e-mail addresses removed before they leave n8n. Convex never logs
@@ -322,8 +330,9 @@ role each write an audit row.
 - A user row holds a first name, an e-mail and the role. No last name, phone, address or avatar.
 - The public page gets tool name and category only. Owners are not exposed, not even as ids.
 - Signed-in views show first names, never e-mail addresses. Only admins see e-mails, in the user list.
-- A notification payload carries what the message needs and nothing else: recipient first name and
-  e-mail, the other person's first name, the tool name, the loan dates.
+- A notification payload carries what the message needs and nothing else: the event id and type,
+  the recipient's first name and e-mail, the other person's first name, the tool name and the loan
+  dates. A test pins the exact shape, so a new field has to be added on purpose.
 - The overdue endpoint returns the borrower's first name and e-mail, the tool name and the dates.
 - Error reports carry workflow, node and a cleaned message, not the data being processed.
 - n8n keeps execution data for 14 days for debugging. Locally that is useful, in production it
@@ -332,7 +341,7 @@ role each write an audit row.
 ## Tests
 
 ```bash
-pnpm test        # 93 tests: authorization, loan state machine, HMAC, HTTP endpoints, notifications
+pnpm test        # 98 tests: authorization, loan state machine, HMAC, HTTP endpoints, notifications
 pnpm typecheck
 pnpm lint
 ```
@@ -357,13 +366,16 @@ webhook by hand (`--tamper` and `--age 400` show the rejections).
 ## Known limits
 
 - n8n stores an event id before it sends the e-mail. If n8n crashes between accepting an event and
-  reporting its result, nothing retries that event. Production would add a reconciliation job.
+  reporting its result, nothing retries that event. The same goes for the step before: Convex runs
+  a scheduled action at most once, so a backend that stops in the middle of a hand-off loses that
+  event. Production would add an outbox and a reconciliation job.
 - A notification e-mail that still fails after three tries is reported and visible, but not retried
   later. Reminders are, on the next run.
-- If a reminder is sent and its write-back then fails three times, the next run sends it again.
-  Delivery is at least once.
+- Reminders are delivered at least once. If a reminder is sent and its write-back then fails every
+  retry, or a manual run overlaps the scheduled one, the borrower can get it twice.
 - The HMAC secrets reach the n8n Code nodes through the container environment, which requires
-  allowing environment access in nodes. Fine for a local container that holds nothing else.
-- Dates are UTC. Lists are capped (100 to 1000 rows) instead of paginated.
+  allowing environment access in nodes. Those nodes can then read every variable of the container,
+  the n8n encryption key included. Acceptable for a local single-user instance only.
+- Dates are UTC. Lists are capped (50 to 1000 rows) instead of paginated.
 
 What I would change for a real deployment is in [docs/PRODUCTION.md](docs/PRODUCTION.md).

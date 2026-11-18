@@ -18,7 +18,8 @@ services:
       GENERIC_TIMEZONE: ${GENERIC_TIMEZONE:-Europe/Madrid}
       TZ: ${GENERIC_TIMEZONE:-Europe/Madrid}
       # n8n 2.x blocks $env in expressions and Code nodes by default. We need it for the HMAC secrets.
-      # This container only holds the variables listed here, so exposing them to workflows is acceptable locally.
+      # Code nodes can then read every variable of this container, the n8n encryption key included.
+      # Acceptable for a local single-user instance, not for production (see docs/PRODUCTION.md).
       N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
       # n8n 2.x blocks require() of Node built-ins in Code nodes by default. HMAC needs only crypto.
       NODE_FUNCTION_ALLOW_BUILTIN: crypto
