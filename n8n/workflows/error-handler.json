@@ -17,7 +17,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "// Canonical string: \"v1:\" + ts + \":\" + METHOD + \":\" + pathname + \":\" + rawBody\nconst crypto = require('crypto');\nfunction sign(secret, method, pathname, rawBody) {\n  const ts = String(Math.floor(Date.now() / 1000));\n  const hex = crypto.createHmac('sha256', secret).update('v1:' + ts + ':' + method + ':' + pathname + ':' + rawBody).digest('hex');\n  return { 'X-LendLoop-Timestamp': ts, 'X-LendLoop-Signature': 'v1=' + hex };\n}\nconst SECRET = $env.N8N_TO_CONVEX_SECRET;\nif (!SECRET) throw new Error('N8N_TO_CONVEX_SECRET is not set in the n8n container');\nconst BASE = String($env.CONVEX_SITE_URL || '').replace(/\\/+$/, '');\nif (!BASE) throw new Error('CONVEX_SITE_URL is not set in the n8n container');\n// Keep error text short and free of e-mail addresses before it leaves n8n.\nconst clean = (s, n) => String(s || '').replace(/[^\\s@<>]+@[^\\s@<>]+/g, '[email]').replace(/\\s+/g, ' ').slice(0, n);\nconst PATHNAME = '/n8n/workflow-errors';\nconst x = $json.execution || {};\nconst report = {\n  executionId: String(x.id ?? 'unknown'),\n  workflowName: clean($json.workflow?.name, 120),\n  nodeName: clean(x.lastNodeExecuted, 120),\n  message: clean(x.error?.message, 300),\n};\nconsole.error('LendLoop workflow error', JSON.stringify(report)); // also kept in this execution's log\nconst body = JSON.stringify(report);\nreturn [{ json: { url: BASE + PATHNAME, body, headers: sign(SECRET, 'POST', PATHNAME, body), report } }];"
+        "jsCode": "// Canonical string: \"v1:\" + ts + \":\" + METHOD + \":\" + pathname + \":\" + rawBody\nconst crypto = require('crypto');\nfunction sign(secret, method, pathname, rawBody) {\n  const ts = String(Math.floor(Date.now() / 1000));\n  const hex = crypto.createHmac('sha256', secret).update('v1:' + ts + ':' + method + ':' + pathname + ':' + rawBody).digest('hex');\n  return { 'X-LendLoop-Timestamp': ts, 'X-LendLoop-Signature': 'v1=' + hex };\n}\nconst SECRET = $env.N8N_TO_CONVEX_SECRET;\nif (!SECRET) throw new Error('N8N_TO_CONVEX_SECRET is not set in the n8n container');\nconst BASE = String($env.CONVEX_SITE_URL || '').replace(/\\/+$/, '');\nif (!BASE) throw new Error('CONVEX_SITE_URL is not set in the n8n container');\n// Keep error text short and free of e-mail addresses before it leaves n8n.\nconst clean = (s, n) => String(s || '').replace(/[^\\s@<>]+@[^\\s@<>]+/g, '[email]').replace(/\\s+/g, ' ').slice(0, n);\nconst PATHNAME = '/n8n/workflow-errors';\n// A workflow that fails in its trigger reports \"trigger\" instead of \"execution\" and has no execution id.\nconst x = $json.execution || {};\nconst failure = x.error || $json.trigger?.error || {};\nconst report = {\n  executionId: String(x.id ?? 'trigger-' + Date.now()),\n  workflowName: clean($json.workflow?.name, 120) || 'Unknown workflow',\n  nodeName: clean(x.lastNodeExecuted, 120) || undefined,\n  message: clean(failure.message, 300) || 'Unknown error',\n};\nconsole.error('LendLoop workflow error', JSON.stringify(report)); // also kept in this execution's log\nconst body = JSON.stringify(report);\nreturn [{ json: { url: BASE + PATHNAME, body, headers: sign(SECRET, 'POST', PATHNAME, body), report } }];"
       },
       "id": "af536e43-ea2e-435d-ac7a-da17c341497e",
       "name": "Build and sign error report",
@@ -62,8 +62,8 @@
         0
       ],
       "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 2000
+      "maxTries": 5,
+      "waitBetweenTries": 5000
     }
   ],
   "connections": {

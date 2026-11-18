@@ -80,8 +80,8 @@
         100
       ],
       "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 2000
+      "maxTries": 5,
+      "waitBetweenTries": 5000
     },
     {
       "parameters": {
@@ -217,8 +217,8 @@
         100
       ],
       "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 2000
+      "maxTries": 5,
+      "waitBetweenTries": 5000
     }
   ],
   "connections": {
