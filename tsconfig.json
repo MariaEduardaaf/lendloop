@@ -26,6 +26,7 @@
     "tests/**/*.ts",
     "*.ts",
     "*.mjs",
+    "*.mts",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
