@@ -3,7 +3,7 @@ import { ConvexError } from "convex/values";
 import { internal } from "./_generated/api";
 import { httpAction } from "./_generated/server";
 import { SIGNATURE_HEADER, TIMESTAMP_HEADER, verify } from "./lib/hmac";
-import { parseReminderBody, parseWorkflowErrorBody } from "./lib/payloads";
+import { parseNotificationResultBody, parseReminderBody, parseWorkflowErrorBody } from "./lib/payloads";
 
 // n8n -> Convex endpoints, served at the deployment's site URL (CONVEX_SITE_URL).
 // Every request must carry a valid HMAC signature made with N8N_TO_CONVEX_SECRET.
@@ -38,6 +38,16 @@ async function authenticate(req: Request): Promise<string | null> {
   return ok ? rawBody : null;
 }
 
+/** Runs a write-back and answers 400 when the mutation rejects it with a ConvexError. */
+async function writeBack(run: () => Promise<unknown>): Promise<Response> {
+  try {
+    return json(await run());
+  } catch (e) {
+    if (e instanceof ConvexError) return badRequest(String(e.data));
+    throw e;
+  }
+}
+
 function parseJson(rawBody: string): unknown {
   if (rawBody.length > MAX_BODY_CHARS) return undefined;
   try {
@@ -64,12 +74,26 @@ http.route({
     if (rawBody === null) return unauthorized();
     const body = parseReminderBody(parseJson(rawBody));
     if (!body) return badRequest("Invalid body");
-    try {
-      return json(await ctx.runMutation(internal.automation.recordReminder, body));
-    } catch (e) {
-      if (e instanceof ConvexError) return badRequest(String(e.data));
-      throw e;
-    }
+    return writeBack(() => ctx.runMutation(internal.automation.recordReminder, body));
+  }),
+});
+
+http.route({
+  path: "/n8n/notifications",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    const rawBody = await authenticate(req);
+    if (rawBody === null) return unauthorized();
+    const body = parseNotificationResultBody(parseJson(rawBody));
+    if (!body) return badRequest("Invalid body");
+    return writeBack(() =>
+      ctx.runMutation(internal.notifications.recordOutcome, {
+        eventId: body.eventId,
+        status: body.status === "sent" ? "delivered" : "failed",
+        attempts: 1,
+        lastError: body.error,
+      }),
+    );
   }),
 });
 

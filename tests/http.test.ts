@@ -25,6 +25,7 @@ describe("signature check on every endpoint", () => {
   const endpoints = [
     ["GET", "/n8n/overdue-loans", undefined],
     ["POST", "/n8n/reminders", { loanId: "x", reminderKey: "reminder:x:2026-01-01", status: "sent" }],
+    ["POST", "/n8n/notifications", { eventId: "x:request.created", status: "sent" }],
     ["POST", "/n8n/workflow-errors", { executionId: "1", workflowName: "w", message: "m" }],
   ] as const;
 
@@ -120,6 +121,34 @@ describe("authenticated requests", () => {
     ];
     for (const body of bad) {
       expect((await call(t, "POST", "/n8n/reminders", body)).status).toBe(400);
+    }
+    expect(await t.run((ctx) => ctx.db.query("automationEvents").collect())).toHaveLength(0);
+  });
+
+  it("POST /n8n/notifications stores the result n8n reports, idempotently", async () => {
+    const { t, loanId } = await seeded();
+    const eventId = `${loanId}:request.approved`;
+
+    expect(await (await call(t, "POST", "/n8n/notifications", { eventId, status: "failed", error: "SMTP down" })).json()).toEqual({ ok: true, duplicate: false });
+    expect(await (await call(t, "POST", "/n8n/notifications", { eventId, status: "sent" })).json()).toEqual({ ok: true, duplicate: true });
+    expect(await (await call(t, "POST", "/n8n/notifications", { eventId, status: "sent" })).json()).toEqual({ ok: true, duplicate: true });
+
+    const rows = await t.run((ctx) => ctx.db.query("automationEvents").collect());
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ kind: "notification", key: `notification:${eventId}`, eventType: "request.approved", status: "delivered" });
+  });
+
+  it("POST /n8n/notifications returns 400 for bad input", async () => {
+    const { t, loanId } = await seeded();
+    const bad = [
+      { eventId: `${loanId}:request.approved`, status: "maybe" },
+      { eventId: `${loanId}:request.exploded`, status: "sent" }, // unknown event type
+      { eventId: "does-not-exist:request.approved", status: "sent" },
+      { eventId: 42, status: "sent" },
+      { status: "sent" },
+    ];
+    for (const body of bad) {
+      expect((await call(t, "POST", "/n8n/notifications", body)).status).toBe(400);
     }
     expect(await t.run((ctx) => ctx.db.query("automationEvents").collect())).toHaveLength(0);
   });

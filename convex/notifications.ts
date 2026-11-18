@@ -1,10 +1,16 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalAction, internalMutation, internalQuery } from "./_generated/server";
 import { signedHeaders } from "./lib/hmac";
 import { NOTIFICATION_TYPES, type NotificationType } from "./lib/validators";
 
 // Convex -> n8n: request notifications. Scheduled from the mutation that changes the loan.
+//
+// The hand-off is asynchronous on purpose. n8n answers 2xx as soon as it has verified
+// the signature and stored the event id, then sends the message and reports the result
+// to POST /n8n/notifications. If the webhook answered only after the e-mail went out,
+// a slow mail server would let this request time out while n8n is still working, and
+// the retry would be acknowledged as a duplicate of an attempt that later fails.
 
 const MAX_ATTEMPTS = 5;
 // Wait before attempt 2, 3, 4, 5: 5 s, 30 s, 2 min, 10 min.
@@ -58,9 +64,12 @@ export const buildPayload = internalQuery({
 });
 
 /**
- * Stores the outcome of a notification. Idempotent on the key: a second call updates
- * the existing row instead of creating a new one, and a delivered row is never
- * downgraded to failed by a late duplicate.
+ * Stores the outcome of a notification. Idempotent on the key: a second report updates
+ * the existing row instead of creating a new one, a failed row can be upgraded to
+ * delivered by a later report, and a delivered row is never downgraded.
+ *
+ * Two callers: n8n reports what happened to the message (POST /n8n/notifications), and
+ * `deliver` records a failure when the event never reached n8n.
  */
 export const recordOutcome = internalMutation({
   args: {
@@ -72,20 +81,19 @@ export const recordOutcome = internalMutation({
   handler: async (ctx, { eventId, status, attempts, lastError }) => {
     const parsed = parseEventId(eventId);
     const loanId = parsed && ctx.db.normalizeId("loans", parsed.loanId);
-    if (!parsed || !loanId) return;
+    if (!parsed || !loanId || !(await ctx.db.get(loanId))) throw new ConvexError("Unknown event");
 
     const key = `notification:${eventId}`;
+    const error = status === "failed" ? (lastError ?? "Notification failed").slice(0, 200) : undefined;
     const existing = await ctx.db
       .query("automationEvents")
       .withIndex("by_key", (q) => q.eq("key", key))
       .unique();
     if (existing) {
-      if (existing.status === "delivered") {
-        await ctx.db.patch(existing._id, { attempts: Math.max(existing.attempts, attempts) });
-      } else {
-        await ctx.db.patch(existing._id, { status, attempts, lastError, occurredAt: Date.now() });
+      if (existing.status !== "delivered") {
+        await ctx.db.patch(existing._id, { status, attempts, lastError: error, occurredAt: Date.now() });
       }
-      return;
+      return { ok: true, duplicate: true };
     }
     await ctx.db.insert("automationEvents", {
       loanId,
@@ -94,13 +102,18 @@ export const recordOutcome = internalMutation({
       eventType: parsed.type,
       status,
       attempts,
-      lastError,
+      lastError: error,
       occurredAt: Date.now(),
     });
+    return { ok: true, duplicate: false };
   },
 });
 
-/** One delivery attempt. On failure it schedules the next attempt, or records "failed" after the last. */
+/**
+ * One attempt to hand the event to n8n. A 2xx answer means n8n accepted it and will
+ * report the result itself, so nothing is recorded here. On failure this schedules
+ * the next attempt, or records "failed" after the last one.
+ */
 export const deliver = internalAction({
   args: { eventId: v.string(), attempt: v.number() },
   handler: async (ctx, { eventId, attempt }) => {
@@ -133,20 +146,19 @@ export const deliver = internalAction({
       }
     }
 
-    if (error === null) {
-      await ctx.runMutation(internal.notifications.recordOutcome, { eventId, status: "delivered", attempts: attempt });
-    } else if (retryable && attempt < MAX_ATTEMPTS) {
+    if (error === null) return;
+    if (retryable && attempt < MAX_ATTEMPTS) {
       await ctx.scheduler.runAfter(RETRY_DELAYS_MS[attempt - 1], internal.notifications.deliver, {
         eventId,
         attempt: attempt + 1,
       });
-    } else {
-      await ctx.runMutation(internal.notifications.recordOutcome, {
-        eventId,
-        status: "failed",
-        attempts: attempt,
-        lastError: error,
-      });
+      return;
     }
+    await ctx.runMutation(internal.notifications.recordOutcome, {
+      eventId,
+      status: "failed",
+      attempts: attempt,
+      lastError: error,
+    });
   },
 });

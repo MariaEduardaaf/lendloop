@@ -10,6 +10,12 @@ export type ReminderBody = {
   error?: string;
 };
 
+export type NotificationResultBody = {
+  eventId: string;
+  status: "sent" | "failed";
+  error?: string;
+};
+
 export type WorkflowErrorBody = {
   executionId: string;
   workflowName: string;
@@ -43,6 +49,16 @@ export function parseReminderBody(raw: unknown): ReminderBody | null {
   if (!optionalString(error, 2000)) return null;
   if (!validReminderKey(reminderKey, loanId)) return null;
   return { loanId, reminderKey, status, error: error as string | undefined };
+}
+
+/** The event id itself is checked against the loans table by the mutation. */
+export function parseNotificationResultBody(raw: unknown): NotificationResultBody | null {
+  if (!isRecord(raw)) return null;
+  const { eventId, status, error } = raw;
+  if (!shortString(eventId, 120)) return null;
+  if (status !== "sent" && status !== "failed") return null;
+  if (!optionalString(error, 2000)) return null;
+  return { eventId, status, error: error as string | undefined };
 }
 
 export function parseWorkflowErrorBody(raw: unknown): WorkflowErrorBody | null {

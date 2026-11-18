@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { internal } from "../convex/_generated/api";
 import { verify } from "../convex/lib/hmac";
-import { addLoan, addTool, addUser, newBackend } from "./helpers";
+import { addLoan, addTool, addUser, errorMessage, newBackend } from "./helpers";
 
 const SECRET = "convex-to-n8n-test-secret";
 const URL_ = "http://n8n.test/webhook/lendloop-request";
@@ -67,9 +67,9 @@ describe("notification payload", () => {
 });
 
 describe("notifications.deliver", () => {
-  it("posts a signed payload and records the delivery", async () => {
+  it("posts a signed payload and leaves the outcome for n8n to report", async () => {
     const { t, eventId } = await pendingLoan();
-    fetchMock.mockResolvedValue(new Response("ok", { status: 200 }));
+    fetchMock.mockResolvedValue(new Response("ok", { status: 202 }));
 
     await t.action(internal.notifications.deliver, { eventId, attempt: 1 });
 
@@ -88,9 +88,8 @@ describe("notifications.deliver", () => {
     expect(valid).toBe(true);
     expect(JSON.parse(init.body).eventId).toBe(eventId);
 
-    const rows = await outcomes(t);
-    expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({ kind: "notification", status: "delivered", key: `notification:${eventId}`, attempts: 1 });
+    // Accepted is not delivered: the row appears only when n8n reports the result.
+    expect(await outcomes(t)).toHaveLength(0);
     expect(await scheduled(t)).toHaveLength(0);
   });
 
@@ -118,18 +117,6 @@ describe("notifications.deliver", () => {
     expect(await scheduled(t)).toHaveLength(0);
   });
 
-  it("is idempotent: a duplicate delivery updates the same row", async () => {
-    const { t, eventId } = await pendingLoan();
-    fetchMock.mockResolvedValue(new Response("ok", { status: 200 }));
-
-    await t.action(internal.notifications.deliver, { eventId, attempt: 1 });
-    await t.action(internal.notifications.deliver, { eventId, attempt: 2 });
-
-    const rows = await outcomes(t);
-    expect(rows).toHaveLength(1);
-    expect(rows[0].status).toBe("delivered");
-  });
-
   it("does not retry when the webhook is not configured, and records the failure", async () => {
     const { t, eventId } = await pendingLoan();
     vi.stubEnv("N8N_REQUEST_WEBHOOK_URL", "");
@@ -139,5 +126,49 @@ describe("notifications.deliver", () => {
     expect(fetchMock).not.toHaveBeenCalled();
     expect((await outcomes(t))[0]).toMatchObject({ status: "failed", lastError: "Webhook is not configured" });
     expect(await scheduled(t)).toHaveLength(0);
+  });
+});
+
+describe("notifications.recordOutcome", () => {
+  it("is idempotent: the same report twice creates one row", async () => {
+    const { t, eventId } = await pendingLoan();
+    const report = { eventId, status: "delivered" as const, attempts: 1 };
+
+    expect(await t.mutation(internal.notifications.recordOutcome, report)).toEqual({ ok: true, duplicate: false });
+    expect(await t.mutation(internal.notifications.recordOutcome, report)).toEqual({ ok: true, duplicate: true });
+
+    const rows = await outcomes(t);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ kind: "notification", status: "delivered", key: `notification:${eventId}`, eventType: "request.created" });
+  });
+
+  it("never downgrades a delivered notification to failed", async () => {
+    const { t, eventId } = await pendingLoan();
+    await t.mutation(internal.notifications.recordOutcome, { eventId, status: "delivered", attempts: 1 });
+    await t.mutation(internal.notifications.recordOutcome, { eventId, status: "failed", attempts: 5, lastError: "HTTP 503" });
+    expect((await outcomes(t))[0]).toMatchObject({ status: "delivered", attempts: 1 });
+  });
+
+  it("upgrades a failed hand-off when n8n later reports the message as sent", async () => {
+    const { t, eventId } = await pendingLoan();
+    await t.mutation(internal.notifications.recordOutcome, { eventId, status: "failed", attempts: 5, lastError: "Network error" });
+    await t.mutation(internal.notifications.recordOutcome, { eventId, status: "delivered", attempts: 1 });
+
+    const rows = await outcomes(t);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].status).toBe("delivered");
+    expect(rows[0].lastError).toBeUndefined();
+  });
+
+  it("truncates the stored error and rejects an event it does not know", async () => {
+    const { t, loanId, eventId } = await pendingLoan();
+    await t.mutation(internal.notifications.recordOutcome, { eventId, status: "failed", attempts: 1, lastError: "x".repeat(1000) });
+    expect((await outcomes(t))[0].lastError).toHaveLength(200);
+
+    for (const unknown of ["garbage", `${loanId}:request.exploded`]) {
+      expect(
+        await errorMessage(t.mutation(internal.notifications.recordOutcome, { eventId: unknown, status: "delivered", attempts: 1 })),
+      ).toBe("Unknown event");
+    }
   });
 });
