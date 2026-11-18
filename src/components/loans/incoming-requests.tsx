@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import type { LoanStatus } from "@/lib/labels";
+import { useToday } from "@/lib/use-today";
 import { ActionButton } from "../action-button";
 import { EmptyState } from "../empty-state";
 import { Loading } from "../feedback";
@@ -15,7 +16,7 @@ const ORDER: Record<LoanStatus, number> = { pending: 0, approved: 1, returned: 2
 
 /** Requests on my tools: approve or decline pending ones, mark approved ones as returned. */
 export function IncomingRequests() {
-  const loans = useQuery(api.loans.incoming);
+  const loans = useQuery(api.loans.incoming, { today: useToday() });
   const approve = useMutation(api.loans.approve);
   const decline = useMutation(api.loans.decline);
   const markReturned = useMutation(api.loans.markReturned);

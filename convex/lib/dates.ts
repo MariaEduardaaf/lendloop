@@ -17,6 +17,18 @@ export function isIsoDate(value: string): boolean {
   return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
 }
 
+/**
+ * Checks the "today" a query received as an argument. Queries do not read the clock:
+ * Convex caches a query result until the data it read changes, so a query that called
+ * Date.now() could keep answering with yesterday's date. The caller passes the date
+ * instead, which also makes it part of the cache key. It only shifts display flags
+ * (availability, overdue). Every rule is enforced in mutations, against the server clock.
+ */
+export function queryDate(today: string): string {
+  if (!isIsoDate(today)) throw new ConvexError("Invalid date");
+  return today;
+}
+
 /** Whole days from a to b (b minus a). Both must be valid ISO dates. */
 export function daysBetween(a: string, b: string): number {
   return Math.round((Date.parse(`${b}T00:00:00.000Z`) - Date.parse(`${a}T00:00:00.000Z`)) / MS_PER_DAY);

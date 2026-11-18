@@ -3,12 +3,13 @@
 import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { CATEGORY_LABELS } from "@/lib/labels";
+import { useToday } from "@/lib/use-today";
 import { EmptyState } from "./empty-state";
 import { Loading } from "./feedback";
 
 /** Read-only list for visitors: name and category only, straight from tools.listPublic. */
 export function PublicTools() {
-  const tools = useQuery(api.tools.listPublic);
+  const tools = useQuery(api.tools.listPublic, { today: useToday() });
 
   if (tools === undefined) return <Loading label="Loading tools" />;
   if (tools.length === 0) {

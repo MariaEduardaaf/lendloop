@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { todayUtc } from "../convex/lib/dates";
 import { api } from "../convex/_generated/api";
 import { addLoan, addTool, addUser, errorMessage, newBackend } from "./helpers";
 
@@ -12,7 +13,7 @@ describe("tools.listPublic", () => {
     const ana = await addUser(t, "ana");
     await addTool(t, ana.id, "Cordless drill");
 
-    const tools = await t.query(api.tools.listPublic, {});
+    const tools = await t.query(api.tools.listPublic, { today: todayUtc() });
     expect(tools).toEqual([{ name: "Cordless drill", category: "power_tools" }]);
   });
 
@@ -26,20 +27,20 @@ describe("tools.listPublic", () => {
     await t.run((ctx) => ctx.db.patch(removed, { status: "removed" }));
     await addLoan(t, { toolId: onLoan, ownerId: ana.id, borrowerId: ben.id, startOffset: -1, endOffset: 2, status: "approved" });
 
-    const names = (await t.query(api.tools.listPublic, {})).map((x) => x.name);
+    const names = (await t.query(api.tools.listPublic, { today: todayUtc() })).map((x) => x.name);
     expect(names).toEqual(["Free tool"]);
   });
 
   it("works without a session", async () => {
     const t = newBackend();
-    await expect(t.query(api.tools.listPublic, {})).resolves.toEqual([]);
+    await expect(t.query(api.tools.listPublic, { today: todayUtc() })).resolves.toEqual([]);
   });
 });
 
 describe("tools.list", () => {
   it("requires a signed-in user", async () => {
     const t = newBackend();
-    expect(await errorMessage(t.query(api.tools.list, {}))).toBe("Sign in to continue");
+    expect(await errorMessage(t.query(api.tools.list, { today: todayUtc() }))).toBe("Sign in to continue");
   });
 
   it("returns availability, owner first name and filters by category", async () => {
@@ -51,7 +52,7 @@ describe("tools.list", () => {
     await t.run((ctx) => ctx.db.patch(garden, { category: "garden" }));
     await addLoan(t, { toolId: drill, ownerId: ana.id, borrowerId: ben.id, startOffset: 0, endOffset: 1, status: "approved" });
 
-    const all = await ben.as.query(api.tools.list, {});
+    const all = await ben.as.query(api.tools.list, { today: todayUtc() });
     expect(all).toHaveLength(2);
     expect(all.find((x) => x.name === "Drill")).toMatchObject({
       availability: "on_loan",
@@ -59,7 +60,7 @@ describe("tools.list", () => {
       ownerTrustedLender: true,
       isMine: false,
     });
-    const onlyGarden = await ben.as.query(api.tools.list, { category: "garden" });
+    const onlyGarden = await ben.as.query(api.tools.list, { today: todayUtc(), category: "garden" });
     expect(onlyGarden.map((x) => x.name)).toEqual(["Rake"]);
   });
 });

@@ -2,6 +2,7 @@ import { httpRouter } from "convex/server";
 import { ConvexError } from "convex/values";
 import { internal } from "./_generated/api";
 import { httpAction } from "./_generated/server";
+import { todayUtc } from "./lib/dates";
 import { SIGNATURE_HEADER, TIMESTAMP_HEADER, verify } from "./lib/hmac";
 import { parseNotificationResultBody, parseReminderBody, parseWorkflowErrorBody } from "./lib/payloads";
 
@@ -62,7 +63,8 @@ http.route({
   method: "GET",
   handler: httpAction(async (ctx, req) => {
     if ((await authenticate(req)) === null) return unauthorized();
-    return json(await ctx.runQuery(internal.automation.overdueLoans, {}));
+    // The date is read here, in the action, and passed in: queries are cached and must not read the clock.
+    return json(await ctx.runQuery(internal.automation.overdueLoans, { asOf: todayUtc() }));
   }),
 });
 

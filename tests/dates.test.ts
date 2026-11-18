@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { daysBetween, isIsoDate, rangesOverlap, todayUtc } from "../convex/lib/dates";
+import { daysBetween, isIsoDate, queryDate, rangesOverlap, todayUtc } from "../convex/lib/dates";
 
 describe("dates", () => {
   it("computes today in UTC", () => {
@@ -10,6 +10,11 @@ describe("dates", () => {
     expect(isIsoDate("2026-02-30")).toBe(false);
     expect(isIsoDate("2026-2-3")).toBe(false);
     expect(isIsoDate("tomorrow")).toBe(false);
+  });
+  it("accepts only a real date as the today of a query", () => {
+    expect(queryDate("2026-11-18")).toBe("2026-11-18");
+    expect(() => queryDate("yesterday")).toThrow();
+    expect(() => queryDate("")).toThrow();
   });
   it("counts days between dates", () => {
     expect(daysBetween("2026-11-18", "2026-11-21")).toBe(3);

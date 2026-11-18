@@ -1,7 +1,7 @@
 import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireUser } from "./lib/auth";
-import { todayUtc } from "./lib/dates";
+import { queryDate } from "./lib/dates";
 import { toolIdsOnLoan, userLookup } from "./lib/loanViews";
 import { removeTool } from "./lib/toolRemoval";
 import { categoryValidator, conditionValidator, LIMITS } from "./lib/validators";
@@ -27,9 +27,9 @@ function cleanDescription(value: string): string {
  * Only active tools that are not out on loan today.
  */
 export const listPublic = query({
-  args: {},
-  handler: async (ctx) => {
-    const today = todayUtc();
+  args: { today: v.string() },
+  handler: async (ctx, args) => {
+    const today = queryDate(args.today);
     const [tools, onLoan] = await Promise.all([
       ctx.db
         .query("tools")
@@ -43,10 +43,10 @@ export const listPublic = query({
 
 /** All active tools for signed-in users, with availability and the owner's first name. */
 export const list = query({
-  args: { category: v.optional(categoryValidator) },
-  handler: async (ctx, { category }) => {
+  args: { today: v.string(), category: v.optional(categoryValidator) },
+  handler: async (ctx, { category, ...args }) => {
     const me = await requireUser(ctx);
-    const today = todayUtc();
+    const today = queryDate(args.today);
     const tools = await ctx.db
       .query("tools")
       .withIndex("by_status_category", (q) =>
@@ -75,10 +75,10 @@ export const list = query({
 });
 
 export const myListings = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { today: v.string() },
+  handler: async (ctx, args) => {
     const me = await requireUser(ctx);
-    const today = todayUtc();
+    const today = queryDate(args.today);
     const tools = await ctx.db
       .query("tools")
       .withIndex("by_owner", (q) => q.eq("ownerId", me._id))

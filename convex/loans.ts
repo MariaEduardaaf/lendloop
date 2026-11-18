@@ -2,7 +2,7 @@ import { ConvexError, v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query, type MutationCtx } from "./_generated/server";
 import { requireUser } from "./lib/auth";
-import { assertValidLoanRange, rangesOverlap, todayUtc } from "./lib/dates";
+import { assertValidLoanRange, queryDate, rangesOverlap, todayUtc } from "./lib/dates";
 import { toLoanRow, toolLookup, userLookup } from "./lib/loanViews";
 import { scheduleNotification } from "./lib/notify";
 
@@ -109,15 +109,15 @@ export const markReturned = mutation({
 
 /** Requests I made as a borrower, newest first. */
 export const myRequests = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { today: v.string() },
+  handler: async (ctx, args) => {
     const me = await requireUser(ctx);
     const loans = await ctx.db
       .query("loans")
+    const today = queryDate(args.today);
       .withIndex("by_borrower", (q) => q.eq("borrowerId", me._id))
       .order("desc")
       .take(VIEW_LIMIT);
-    const today = todayUtc();
     const lookups = { user: userLookup(ctx), tool: toolLookup(ctx) };
     return await Promise.all(loans.map((l) => toLoanRow(ctx, l, today, lookups)));
   },
@@ -125,16 +125,15 @@ export const myRequests = query({
 
 /** Requests on my tools, newest first. */
 export const incoming = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { today: v.string() },
+  handler: async (ctx, args) => {
     const me = await requireUser(ctx);
     const loans = await ctx.db
       .query("loans")
-      .withIndex("by_owner_status", (q) => q.eq("ownerId", me._id))
+    const today = queryDate(args.today);
+      .withIndex("by_owner", (q) => q.eq("ownerId", me._id))
+      .order("desc")
       .take(VIEW_LIMIT);
-    // The index is ordered by status, so sort by date here. ponytail: first 100 rows only.
-    loans.sort((a, b) => b.createdAt - a.createdAt);
-    const today = todayUtc();
     const lookups = { user: userLookup(ctx), tool: toolLookup(ctx) };
     return await Promise.all(loans.map((l) => toLoanRow(ctx, l, today, lookups)));
   },

@@ -20,7 +20,7 @@ const events = (t: Awaited<ReturnType<typeof withOverdueLoan>>["t"]) => t.run((c
 describe("automation.overdueLoans", () => {
   it("returns the overdue loan with only the fields n8n needs", async () => {
     const { t, loanId, reminderKey } = await withOverdueLoan();
-    const result = await t.query(internal.automation.overdueLoans, {});
+    const result = await t.query(internal.automation.overdueLoans, { asOf: todayUtc() });
 
     expect(result.asOf).toBe(todayUtc());
     expect(result.loans).toEqual([
@@ -41,17 +41,17 @@ describe("automation.overdueLoans", () => {
     await addLoan(t, { toolId: tool, ownerId: ana.id, borrowerId: ben.id, startOffset: -9, endOffset: -8, status: "pending" });
     await addLoan(t, { toolId: tool, ownerId: ana.id, borrowerId: ben.id, startOffset: -1, endOffset: 0, status: "approved" });
 
-    expect((await t.query(internal.automation.overdueLoans, {})).loans).toHaveLength(1);
+    expect((await t.query(internal.automation.overdueLoans, { asOf: todayUtc() })).loans).toHaveLength(1);
   });
 
   it("skips the loan once today's reminder was delivered, but offers a failed one again", async () => {
     const { t, loanId, reminderKey } = await withOverdueLoan();
 
     await t.mutation(internal.automation.recordReminder, { loanId, reminderKey, status: "failed", error: "SMTP down" });
-    expect((await t.query(internal.automation.overdueLoans, {})).loans).toHaveLength(1);
+    expect((await t.query(internal.automation.overdueLoans, { asOf: todayUtc() })).loans).toHaveLength(1);
 
     await t.mutation(internal.automation.recordReminder, { loanId, reminderKey, status: "sent" });
-    expect((await t.query(internal.automation.overdueLoans, {})).loans).toHaveLength(0);
+    expect((await t.query(internal.automation.overdueLoans, { asOf: todayUtc() })).loans).toHaveLength(0);
   });
 });
 

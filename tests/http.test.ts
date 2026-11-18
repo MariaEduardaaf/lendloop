@@ -100,6 +100,18 @@ describe("authenticated requests", () => {
     expect(json.loans[0]).toMatchObject({ loanId, daysOverdue: 2, borrower: { firstName: "Ben" } });
   });
 
+  it("GET /n8n/overdue-loans follows the clock: a loan becomes overdue the day after it ends", async () => {
+    const t = newBackend();
+    const ana = await addUser(t, "ana");
+    const ben = await addUser(t, "ben");
+    const tool = await addTool(t, ana.id);
+    await addLoan(t, { toolId: tool, ownerId: ana.id, borrowerId: ben.id, startOffset: -2, endOffset: 0, status: "approved" });
+
+    expect((await (await call(t, "GET", "/n8n/overdue-loans")).json()).loans).toHaveLength(0);
+    vi.setSystemTime(Date.now() + 24 * 60 * 60 * 1000);
+    expect((await (await call(t, "GET", "/n8n/overdue-loans")).json()).loans).toHaveLength(1);
+  });
+
   it("POST /n8n/reminders is idempotent over HTTP", async () => {
     const { t, loanId } = await seeded();
     const body = { loanId, reminderKey: `reminder:${loanId}:${todayUtc()}`, status: "sent" };

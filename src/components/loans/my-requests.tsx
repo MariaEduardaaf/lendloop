@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
+import { useToday } from "@/lib/use-today";
 import { ActionButton } from "../action-button";
 import { EmptyState } from "../empty-state";
 import { Loading } from "../feedback";
@@ -11,7 +12,7 @@ import { LoanCard } from "./loan-card";
 
 /** Requests I made as a borrower. Pending ones can be cancelled. */
 export function MyRequests() {
-  const loans = useQuery(api.loans.myRequests);
+  const loans = useQuery(api.loans.myRequests, { today: useToday() });
   const cancel = useMutation(api.loans.cancel);
 
   if (loans === undefined) return <Loading label="Loading your requests" />;

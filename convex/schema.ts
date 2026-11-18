@@ -49,7 +49,7 @@ export default defineSchema({
     decidedAt: v.optional(v.number()),
     returnedAt: v.optional(v.number()),
   })
-    .index("by_owner_status", ["ownerId", "status"])
+    .index("by_owner", ["ownerId"])
     .index("by_borrower", ["borrowerId"])
     .index("by_tool_status", ["toolId", "status"])
     .index("by_status_endDate", ["status", "endDate"]),

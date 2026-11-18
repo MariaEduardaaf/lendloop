@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { CATEGORY_LABELS, type Category } from "@/lib/labels";
+import { useToday } from "@/lib/use-today";
 import { linkButtonClass } from "../button";
 import { EmptyState } from "../empty-state";
 import { Loading } from "../feedback";
@@ -14,7 +15,8 @@ import { ToolCard } from "./tool-card";
 /** All active tools, filtered by category on the server through the query argument. */
 export function ToolsBoard() {
   const [category, setCategory] = useState<Category | null>(null);
-  const tools = useQuery(api.tools.list, category ? { category } : {});
+  const today = useToday();
+  const tools = useQuery(api.tools.list, category ? { today, category } : { today });
 
   return (
     <div className="space-y-6">

@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { todayUtc } from "../convex/lib/dates";
 import { api } from "../convex/_generated/api";
 import { addLoan, addTool, addUser, errorMessage, inDays, newBackend } from "./helpers";
 
@@ -153,15 +154,15 @@ describe("loan views", () => {
       }),
     );
 
-    const mine = await ben.as.query(api.loans.myRequests, {});
+    const mine = await ben.as.query(api.loans.myRequests, { today: todayUtc() });
     expect(mine).toHaveLength(1);
     expect(mine[0]).toMatchObject({ toolName: "Cordless drill", ownerFirstName: "Ana", overdue: true });
     expect(mine[0].activity[0]).toMatchObject({ kind: "overdue_reminder", status: "delivered" });
     // No email or user id of the other party in the row.
     expect(JSON.stringify(mine[0])).not.toContain("example.com");
 
-    expect(await ana.as.query(api.loans.incoming, {})).toHaveLength(1);
-    expect(await cara.as.query(api.loans.incoming, {})).toHaveLength(0);
-    expect(await cara.as.query(api.loans.myRequests, {})).toHaveLength(0);
+    expect(await ana.as.query(api.loans.incoming, { today: todayUtc() })).toHaveLength(1);
+    expect(await cara.as.query(api.loans.incoming, { today: todayUtc() })).toHaveLength(0);
+    expect(await cara.as.query(api.loans.myRequests, { today: todayUtc() })).toHaveLength(0);
   });
 });

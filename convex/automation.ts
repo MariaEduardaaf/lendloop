@@ -1,6 +1,6 @@
 import { ConvexError, v } from "convex/values";
 import { internalMutation, internalQuery } from "./_generated/server";
-import { daysBetween, todayUtc } from "./lib/dates";
+import { daysBetween, queryDate } from "./lib/dates";
 
 // Internal functions behind the n8n -> Convex HTTP endpoints (see http.ts).
 // They are internal so the only way in is a request with a valid signature.
@@ -15,9 +15,9 @@ const reminderKeyFor = (loanId: string, day: string) => `reminder:${loanId}:${da
  * email the borrower twice. A failed reminder is offered again.
  */
 export const overdueLoans = internalQuery({
-  args: {},
-  handler: async (ctx) => {
-    const asOf = todayUtc();
+  args: { asOf: v.string() },
+  handler: async (ctx, args) => {
+    const asOf = queryDate(args.asOf);
     const loans = await ctx.db
       .query("loans")
       .withIndex("by_status_endDate", (q) => q.eq("status", "approved").lt("endDate", asOf))

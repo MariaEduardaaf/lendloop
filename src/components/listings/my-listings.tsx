@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
+import { useToday } from "@/lib/use-today";
 import { Button } from "../button";
 import { EmptyState } from "../empty-state";
 import { Loading } from "../feedback";
@@ -12,7 +13,7 @@ import { ToolForm } from "./tool-form";
 
 /** My listings with the create form. The form opens from the header button or the empty state. */
 export function MyListings() {
-  const listings = useQuery(api.tools.myListings);
+  const listings = useQuery(api.tools.myListings, { today: useToday() });
   const create = useMutation(api.tools.create);
   const [creating, setCreating] = useState(false);
 

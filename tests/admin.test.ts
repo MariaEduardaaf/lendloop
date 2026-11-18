@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { todayUtc } from "../convex/lib/dates";
 import { api, internal } from "../convex/_generated/api";
 import { addLoan, addTool, addUser, errorMessage, newBackend } from "./helpers";
 
@@ -13,7 +14,7 @@ describe("admin functions", () => {
     const tool = await addTool(t, ben.id);
 
     for (const run of [
-      () => ana.as.query(api.admin.listAllLoans, {}),
+      () => ana.as.query(api.admin.listAllLoans, { today: todayUtc() }),
       () => ana.as.query(api.admin.listUsers, {}),
       () => ana.as.query(api.admin.listWorkflowErrors, {}),
       () => ana.as.mutation(api.admin.removeTool, { toolId: tool }),
@@ -53,7 +54,7 @@ describe("admin functions", () => {
     expect(await t.run((ctx) => ctx.db.get(ana.id))).toMatchObject({ trustedLender: true });
     const audit = await t.run((ctx) => ctx.db.query("auditLog").collect());
     expect(audit[0]).toMatchObject({ action: "user.trusted_lender_set", targetId: ana.id });
-    expect(await admin.as.query(api.admin.listAllLoans, {})).toHaveLength(1);
+    expect(await admin.as.query(api.admin.listAllLoans, { today: todayUtc() })).toHaveLength(1);
     expect(await admin.as.query(api.admin.listUsers, {})).toHaveLength(3);
   });
 });

@@ -1,7 +1,7 @@
 import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireAdmin } from "./lib/auth";
-import { todayUtc } from "./lib/dates";
+import { queryDate } from "./lib/dates";
 import { toLoanRow, toolLookup, userLookup } from "./lib/loanViews";
 import { removeTool as softRemoveTool } from "./lib/toolRemoval";
 
@@ -10,11 +10,11 @@ import { removeTool as softRemoveTool } from "./lib/toolRemoval";
 const LIST_LIMIT = 200;
 
 export const listAllLoans = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { today: v.string() },
+  handler: async (ctx, args) => {
     await requireAdmin(ctx);
+    const today = queryDate(args.today);
     const loans = await ctx.db.query("loans").order("desc").take(LIST_LIMIT);
-    const today = todayUtc();
     const lookups = { user: userLookup(ctx), tool: toolLookup(ctx) };
     return await Promise.all(loans.map((l) => toLoanRow(ctx, l, today, lookups)));
   },
