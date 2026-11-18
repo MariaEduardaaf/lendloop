@@ -283,7 +283,8 @@ Convex too, so while Convex itself is unreachable a failed run is visible only i
 
 ## Security decisions
 
-**Authorization lives in Convex.** Next.js only checks that a session exists (`src/proxy.ts`).
+**Authorization lives in Convex.** Next.js only checks that a session exists (the layout of the
+signed-in area, `src/app/(app)/layout.tsx`).
 Every Convex function identifies the caller from the token and applies the ownership or role rule,
 so calling the API directly gets the same answer as the UI.
 

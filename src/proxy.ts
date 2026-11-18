@@ -1,13 +1,9 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { clerkMiddleware } from "@clerk/nextjs/server";
 
-// Next.js 16 renamed `middleware` to `proxy`. Everything except the landing page and
-// the Clerk sign-in pages requires a session. This is the first gate; the real
-// authorization still happens inside every Convex function.
-const isPublic = createRouteMatcher(["/", "/sign-in(.*)", "/sign-up(.*)"]);
-
-export default clerkMiddleware(async (auth, req) => {
-  if (!isPublic(req)) await auth.protect();
-});
+// Next.js 16 renamed `middleware` to `proxy`. Clerk needs it on every request to read
+// the session. It does not decide access: the layout of the signed-in area does that
+// (src/app/(app)/layout.tsx), and every Convex function checks the caller again.
+export default clerkMiddleware();
 
 export const config = {
   matcher: [
