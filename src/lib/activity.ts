@@ -18,7 +18,7 @@ export function activityText(event: Activity, now: number = Date.now()): string 
       ? `Reminder sent ${relativeTime(event.occurredAt, now)}`
       : `Reminder failed after ${attemptsText(event.attempts)}`;
   }
-  if (event.status === "failed") return `Notification failed after ${attemptsText(event.attempts)}`;
+  if (event.status === "failed") return `Notification failed ${relativeTime(event.occurredAt, now)}`;
   const who = event.eventType && OWNER_EVENTS.has(event.eventType) ? "Owner" : "Borrower";
   return `${who} notified ${relativeTime(event.occurredAt, now)}`;
 }

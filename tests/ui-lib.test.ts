@@ -29,8 +29,9 @@ describe("activityText", () => {
   it("shows reminders and failures", () => {
     const reminder = { ...base, kind: "overdue_reminder" as const, eventType: undefined, status: "delivered" as const };
     expect(activityText({ ...reminder, occurredAt: minutesAgo(2 * 24 * 60) }, NOW)).toBe("Reminder sent 2 days ago");
-    const failed = { ...base, kind: "notification" as const, eventType: "request.created", status: "failed" as const, attempts: 5 };
-    expect(activityText(failed, NOW)).toBe("Notification failed after 5 attempts");
+    const failed = { ...base, kind: "notification" as const, eventType: "request.created", status: "failed" as const };
+    expect(activityText(failed, NOW)).toBe("Notification failed 3 minutes ago");
+    expect(activityText({ ...reminder, status: "failed", attempts: 2 }, NOW)).toBe("Reminder failed after 2 attempts");
   });
 });
 
