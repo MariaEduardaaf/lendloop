@@ -93,6 +93,24 @@ describe("approve and decline", () => {
     expect(await errorMessage(ana.as.mutation(api.loans.decline, { loanId: loan }))).toMatch(/no longer pending/);
   });
 
+  it("approve rejects a request whose dates have passed, decline still works", async () => {
+    const { t, ana, ben, tool } = await setup();
+    const over = await addLoan(t, { toolId: tool, ownerId: ana.id, borrowerId: ben.id, startOffset: -5, endOffset: -1, status: "pending" });
+    const started = await addLoan(t, { toolId: tool, ownerId: ana.id, borrowerId: ben.id, startOffset: -1, endOffset: 0, status: "pending" });
+
+    expect(await errorMessage(ana.as.mutation(api.loans.approve, { loanId: over }))).toMatch(/already passed/);
+    expect(await t.run((ctx) => ctx.db.get(over))).toMatchObject({ status: "pending" });
+    expect(await scheduledCount(t)).toBe(0);
+
+    const rows = await ana.as.query(api.loans.incoming, { today: todayUtc() });
+    expect(rows.find((r) => r._id === over)).toMatchObject({ expired: true, overdue: false });
+    expect(rows.find((r) => r._id === started)).toMatchObject({ expired: false });
+
+    // A range that has started but not ended can still be approved, and the stale one declined.
+    await expect(ana.as.mutation(api.loans.approve, { loanId: started })).resolves.toBeNull();
+    await expect(ana.as.mutation(api.loans.decline, { loanId: over })).resolves.toBeNull();
+  });
+
   it("approve rejects an overlapping approved loan", async () => {
     const { t, ana, ben, cara, tool } = await setup();
     await addLoan(t, { toolId: tool, ownerId: ana.id, borrowerId: cara.id, startOffset: 2, endOffset: 5, status: "approved" });

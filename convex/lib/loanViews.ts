@@ -75,6 +75,8 @@ export async function toLoanRow(
     startDate: loan.startDate,
     endDate: loan.endDate,
     status: loan.status,
+    // A request nobody answered in time. It can no longer be approved, only declined or cancelled.
+    expired: loan.status === "pending" && loan.endDate < today,
     overdue: loan.status === "approved" && loan.endDate < today,
     createdAt: loan.createdAt,
     decidedAt: loan.decidedAt,

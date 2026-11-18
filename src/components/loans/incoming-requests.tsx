@@ -47,7 +47,9 @@ export function IncomingRequests() {
             <>
               {loan.status === "pending" && (
                 <div className="flex flex-wrap items-start gap-2">
-                  <ActionButton variant="primary" label="Approve" onClick={() => approve({ loanId: loan._id })} />
+                  {!loan.expired && (
+                    <ActionButton variant="primary" label="Approve" onClick={() => approve({ loanId: loan._id })} />
+                  )}
                   <ActionButton label="Decline" onClick={() => decline({ loanId: loan._id })} />
                 </div>
               )}

@@ -22,6 +22,7 @@ export function LoanCard({ loan, people, actions }: { loan: LoanRow; people: str
         <div className="flex flex-wrap gap-1.5">
           <StatusPill status={loan.status} />
           {loan.overdue && <Badge tone="bad">Overdue</Badge>}
+          {loan.expired && <Badge tone="neutral">Dates passed</Badge>}
         </div>
       </div>
       <dl className="mt-3 grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">

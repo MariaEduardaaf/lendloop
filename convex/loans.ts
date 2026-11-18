@@ -54,6 +54,8 @@ export const approve = mutation({
     const loan = await loadLoan(ctx, loanId);
     if (loan.ownerId !== me._id) throw new ConvexError("Only the owner of the tool can approve this request");
     if (loan.status !== "pending") throw new ConvexError("This request is no longer pending");
+    // Approving dates that are over would create a loan that is overdue from the first minute.
+    if (loan.endDate < todayUtc()) throw new ConvexError("These dates have already passed. Decline the request instead");
 
     const approved = await ctx.db
       .query("loans")
@@ -112,9 +114,9 @@ export const myRequests = query({
   args: { today: v.string() },
   handler: async (ctx, args) => {
     const me = await requireUser(ctx);
+    const today = queryDate(args.today);
     const loans = await ctx.db
       .query("loans")
-    const today = queryDate(args.today);
       .withIndex("by_borrower", (q) => q.eq("borrowerId", me._id))
       .order("desc")
       .take(VIEW_LIMIT);
@@ -128,9 +130,9 @@ export const incoming = query({
   args: { today: v.string() },
   handler: async (ctx, args) => {
     const me = await requireUser(ctx);
+    const today = queryDate(args.today);
     const loans = await ctx.db
       .query("loans")
-    const today = queryDate(args.today);
       .withIndex("by_owner", (q) => q.eq("ownerId", me._id))
       .order("desc")
       .take(VIEW_LIMIT);
