@@ -1,5 +1,7 @@
 # Local automation stack for LendLoop: n8n + Mailpit (fake SMTP inbox).
 # Start: docker compose up -d     n8n UI: http://localhost:5678     Mailpit UI: http://localhost:8025
+# Fixed project name, so container names (lendloop-n8n-1, lendloop-mailpit-1) do not depend on the folder name.
+name: lendloop
 services:
   n8n:
     # n8n 2.x (stable channel at the time of writing). Pinned to an exact tag on purpose.
