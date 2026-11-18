@@ -1,13 +1,12 @@
 import type { ReactNode } from "react";
 
-type Tone = "neutral" | "good" | "warn" | "bad" | "accent";
+type Tone = "neutral" | "good" | "warn" | "accent";
 
 // Words carry the meaning; the edge colour only supports it.
 const TONES: Record<Tone, string> = {
   neutral: "border-edge text-ink",
   good: "border-free text-free",
   warn: "border-dock text-ink",
-  bad: "border-late text-late",
   accent: "border-navy text-navy",
 };
 

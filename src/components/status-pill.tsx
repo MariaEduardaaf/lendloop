@@ -4,7 +4,7 @@ import { STATUS_LABELS, type LoanStatus } from "@/lib/labels";
 const TONES = {
   pending: "warn",
   approved: "good",
-  declined: "bad",
+  declined: "neutral",
   cancelled: "neutral",
   returned: "accent",
 } as const;
