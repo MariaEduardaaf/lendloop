@@ -18,7 +18,7 @@ export function groupLoans<T>(items: Staged<T>[]): Record<StageGroup, Staged<T>[
   };
 }
 
-/** One group of loan cards under its h2. Renders nothing when the group is empty. */
+/** One group of loan cards under its h2. Renders nothing when the group is empty, so the page grid closes up. */
 export function LoanSection({ id, title, count, children }: { id: string; title: string; count: number; children: ReactNode }) {
   if (count === 0) return null;
   return (
@@ -26,7 +26,7 @@ export function LoanSection({ id, title, count, children }: { id: string; title:
       <h2 id={id} className="flex items-baseline gap-2 text-h2 font-bold">
         {title} <span className="text-base font-semibold text-muted">{count}</span>
       </h2>
-      <ul className="mt-3 space-y-3">{children}</ul>
+      <ul className="mt-3 space-y-4">{children}</ul>
     </section>
   );
 }

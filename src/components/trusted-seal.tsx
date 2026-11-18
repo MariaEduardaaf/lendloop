@@ -1,4 +1,10 @@
-/** Trusted Lender mark, set like a small plaque. The admin gives it to reliable neighbors. */
+export const TRUSTED_LENDER_MEANING = "The neighborhood admin marks neighbors who lend and return reliably as Trusted Lenders.";
+
+/**
+ * Trusted Lender mark, set like a small plaque. The admin gives it to reliable neighbors.
+ * Screen readers hear what it means right after the name; sighted readers find the same
+ * sentence on the board header, the landing page and the admin users list.
+ */
 export function TrustedSeal() {
   return (
     <span
@@ -9,6 +15,7 @@ export function TrustedSeal() {
         <path d="M2.5 6.2l2.3 2.3 4.7-5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
       Trusted Lender
+      <span className="sr-only">, marked as reliable by the neighborhood admin</span>
     </span>
   );
 }

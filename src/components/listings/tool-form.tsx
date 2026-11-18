@@ -42,7 +42,7 @@ export function ToolForm({ initial, submitLabel, onSubmit, onDone }: Props) {
           required
           maxLength={LIMITS.toolNameMax}
           className={inputClass}
-          placeholder="A drill, a ladder, a camping stove"
+          placeholder="Cordless drill"
           value={values.name}
           onChange={(e) => set("name", e.target.value)}
         />

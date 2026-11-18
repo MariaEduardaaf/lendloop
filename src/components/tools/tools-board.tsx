@@ -14,6 +14,7 @@ import { PageHeader } from "../page-header";
 import { BoardRail, railLoans } from "./board-rail";
 import { CategoryFilter } from "./category-filter";
 import { ToolCard } from "./tool-card";
+import { TRUSTED_LENDER_MEANING } from "../trusted-seal";
 
 /**
  * The board: every active tool with its next 14 days, filtered by category on the server and
@@ -36,7 +37,7 @@ export function ToolsBoard() {
       <div className="lg:col-start-1">
         <PageHeader
           title="Tools"
-          description="Pick one and ask for the dates you need."
+          description={`Pick one and ask for the dates you need. ${TRUSTED_LENDER_MEANING}`}
           action={
             <input
               type="search"

@@ -1,11 +1,13 @@
 import type { ComponentProps } from "react";
 
-type Variant = "primary" | "secondary";
+type Variant = "primary" | "secondary" | "inverse";
 
 // Navy fill is the one solid action per decision; everything else is outlined.
 const VARIANTS: Record<Variant, string> = {
   primary: "bg-navy text-white hover:bg-navy-strong",
   secondary: "border border-navy bg-plate text-navy hover:bg-tile",
+  // The solid action on a navy surface (the landing bar and closing band).
+  inverse: "bg-plate text-navy hover:bg-tile",
 };
 
 const BASE =
@@ -26,3 +28,4 @@ export function Button({ variant = "primary", className = "", type = "button", .
 
 /** Same look for a Next <Link>, so a navigation action matches the buttons. */
 export const linkButtonClass = `${BASE} ${VARIANTS.primary}`;
+export const inverseLinkButtonClass = `${BASE} ${VARIANTS.inverse}`;

@@ -4,10 +4,14 @@ import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { CATEGORY_LABELS } from "@/lib/labels";
 import { useToday } from "@/lib/use-today";
+import { CategoryGlyph } from "./category-glyph";
 import { EmptyState } from "./empty-state";
 import { Loading } from "./feedback";
 
-/** Read-only list for visitors: name and category only, straight from tools.listPublic. */
+/**
+ * Read-only list for visitors: name and category only, straight from tools.listPublic.
+ * Plain rows, not cards: nothing here is clickable before signing in.
+ */
 export function PublicTools() {
   const tools = useQuery(api.tools.listPublic, { today: useToday() });
 
@@ -16,12 +20,15 @@ export function PublicTools() {
     return <EmptyState title="Nothing is available right now" hint="Sign in and be the first to list a tool." />;
   }
   return (
-    <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <ul className="grid gap-x-10 sm:grid-cols-2 lg:grid-cols-3">
       {tools.map((tool, index) => (
         // The public list has no ids on purpose, so the key combines name and position.
-        <li key={`${tool.name}-${index}`} className="rounded-lg border border-stone-200 bg-white px-4 py-3">
-          <p className="font-medium text-stone-900">{tool.name}</p>
-          <p className="text-sm text-stone-600">{CATEGORY_LABELS[tool.category]}</p>
+        <li key={`${tool.name}-${index}`} className="flex items-center gap-3 border-t border-steel py-3">
+          <CategoryGlyph category={tool.category} />
+          <div className="min-w-0">
+            <p className="font-bold break-words">{tool.name}</p>
+            <p className="text-sm text-muted">{CATEGORY_LABELS[tool.category]}</p>
+          </div>
         </li>
       ))}
     </ul>

@@ -56,7 +56,7 @@ export function MyListings() {
             <h2 id="listings-heading" className="sr-only">
               Your tools
             </h2>
-            <ul className="grid items-start gap-4 md:grid-cols-2">
+            <ul className="grid items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
               {listings.map((listing) => (
                 <ListingCard key={listing._id} listing={listing} today={today} />
               ))}

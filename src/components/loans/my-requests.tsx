@@ -41,7 +41,7 @@ export function MyRequests() {
     { id: "past", title: "Past", items: groups.past },
   ];
   return (
-    <div className="max-w-3xl space-y-10">
+    <div className="grid items-start gap-x-8 gap-y-10 lg:grid-cols-2">
       {sections.map(({ id, title, items }) => (
         <LoanSection key={id} id={`requests-${id}`} title={title} count={items.length}>
           {items.map(({ loan, stage }) => {
@@ -50,6 +50,7 @@ export function MyRequests() {
               <LoanCard
                 key={loan._id}
                 loan={loan}
+                side="borrower"
                 stage={stage}
                 people={`Lender: ${loan.ownerFirstName}`}
                 actions={

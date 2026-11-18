@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { availabilitySentence, bookedText, stripCells } from "../src/lib/availability";
-import { loanStage, type StageInput } from "../src/lib/loan-stage";
+import { adminFilter, loanStage, type StageInput, type StageKey } from "../src/lib/loan-stage";
 
 const TODAY = "2026-11-18"; // a Wednesday
 const loan = (over: Partial<StageInput>): StageInput => ({
@@ -52,6 +52,24 @@ describe("loanStage", () => {
     const [b] = both({ status: "returned", returnedAt: Date.parse("2026-11-03T15:00:00Z") });
     expect(b).toEqual({ key: "returned", group: "past", text: "Returned 3 Nov" });
     expect(loanStage(loan({ status: "returned" }), TODAY, "owner").text).toBe("Returned");
+  });
+  it("admin reads both names", () => {
+    const admin = (over: Partial<StageInput>) => loanStage(loan(over), TODAY, "admin").text;
+    expect(admin({})).toBe("Waiting for Cara");
+    expect(admin({ status: "approved", startDate: "2026-11-16", endDate: "2026-11-20" })).toBe("With Ben, back Fri 20 Nov");
+    expect(admin({ status: "approved", startDate: "2026-11-16", endDate: TODAY })).toBe("With Ben, due back today");
+    expect(admin({ status: "declined" })).toBe("Cara declined");
+  });
+  it("admin filters put late apart from out", () => {
+    expect(["late", "due_today", "out", "pending", "expired", "upcoming", "returned"].map((k) => adminFilter(k as StageKey))).toEqual([
+      "late",
+      "out",
+      "out",
+      "pending",
+      "past",
+      "upcoming",
+      "past",
+    ]);
   });
   it("declined and cancelled", () => {
     const [b, o] = both({ status: "declined" });

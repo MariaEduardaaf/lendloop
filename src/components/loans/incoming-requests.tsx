@@ -90,13 +90,14 @@ export function IncomingRequests() {
     { id: "past", title: "Past", items: groups.past },
   ];
   return (
-    <div className="max-w-3xl space-y-10">
+    <div className="grid items-start gap-x-8 gap-y-10 lg:grid-cols-2">
       {sections.map(({ id, title, items }) => (
         <LoanSection key={id} id={`incoming-${id}`} title={title} count={items.length}>
           {items.map(({ loan, stage }) => (
             <LoanCard
               key={loan._id}
               loan={loan}
+              side="owner"
               stage={stage}
               people={`Borrower: ${loan.borrowerFirstName}`}
               context={stage.key === "pending" && <BorrowerContext loan={loan} />}

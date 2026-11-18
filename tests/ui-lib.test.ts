@@ -20,18 +20,26 @@ describe("relativeTime", () => {
 });
 
 describe("activityText", () => {
-  const base = { occurredAt: minutesAgo(3) };
-  it("names the notified side from the event type", () => {
-    const created = { ...base, kind: "notification" as const, eventType: "request.created", status: "delivered" as const };
-    expect(activityText(created, NOW)).toBe("Lender notified 3 minutes ago");
-    expect(activityText({ ...created, eventType: "request.approved" }, NOW)).toBe("Borrower notified 3 minutes ago");
+  const names = { ownerFirstName: "Cara", borrowerFirstName: "Ben" };
+  const created = { occurredAt: NOW - 10_000, kind: "notification" as const, eventType: "request.created", status: "delivered" as const };
+  const approved = { ...created, eventType: "request.approved", occurredAt: minutesAgo(120) };
+  it("speaks from the viewer's side", () => {
+    expect(activityText(created, names, "owner", NOW)).toBe("You were e-mailed just now");
+    expect(activityText(created, names, "borrower", NOW)).toBe("Cara was e-mailed just now");
+    expect(activityText(approved, names, "owner", NOW)).toBe("Ben was e-mailed 2 hours ago");
+    expect(activityText(approved, names, "borrower", NOW)).toBe("You were e-mailed 2 hours ago");
+    expect(activityText(approved, names, "admin", NOW)).toBe("Ben was e-mailed 2 hours ago");
   });
-  it("shows reminders and failures", () => {
-    const reminder = { ...base, kind: "overdue_reminder" as const, eventType: undefined, status: "delivered" as const };
-    expect(activityText({ ...reminder, occurredAt: minutesAgo(2 * 24 * 60) }, NOW)).toBe("Reminder sent 2 days ago");
-    const failed = { ...base, kind: "notification" as const, eventType: "request.created", status: "failed" as const };
-    expect(activityText(failed, NOW)).toBe("Notification failed 3 minutes ago");
-    expect(activityText({ ...reminder, status: "failed" }, NOW)).toBe("Reminder failed 3 minutes ago");
+  it("keeps failures visible", () => {
+    expect(activityText({ ...created, status: "failed" }, names, "borrower", NOW)).toBe("E-mail to Cara failed, just now");
+    expect(activityText({ ...approved, status: "failed" }, names, "borrower", NOW)).toBe("E-mail to you failed, 2 hours ago");
+  });
+  it("shows reminders and cancelled loans", () => {
+    const reminder = { ...created, kind: "overdue_reminder" as const, eventType: undefined, occurredAt: minutesAgo(2 * 24 * 60) };
+    expect(activityText(reminder, names, "owner", NOW)).toBe("Reminder e-mailed to Ben 2 days ago");
+    expect(activityText(reminder, names, "borrower", NOW)).toBe("Reminder e-mailed to you 2 days ago");
+    expect(activityText({ ...reminder, status: "failed" }, names, "owner", NOW)).toBe("Reminder to Ben failed, 2 days ago");
+    expect(activityText({ ...approved, eventType: "loan.cancelled" }, names, "owner", NOW)).toBe("Cancellation e-mailed 2 hours ago");
   });
 });
 

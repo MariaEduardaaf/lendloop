@@ -1,5 +1,11 @@
 import { CATEGORIES, CATEGORY_LABELS, type Category } from "@/lib/labels";
 
+/** Toggle chip look, shared with the admin loan filters. */
+export const chipClass = (selected: boolean) =>
+  `min-h-9 shrink-0 rounded-full border px-4 text-sm font-semibold transition-colors ${
+    selected ? "border-navy bg-navy text-white" : "border-edge bg-plate text-ink hover:bg-tile"
+  }`;
+
 type Props = { value: Category | null; onChange: (value: Category | null) => void };
 
 /** Category chips. Each one is a toggle button, "All" clears the filter. One scrollable row on phones. */
@@ -22,9 +28,7 @@ export function CategoryFilter({ value, onChange }: Props) {
             type="button"
             aria-pressed={selected}
             onClick={() => onChange(category)}
-            className={`min-h-9 shrink-0 rounded-full border px-4 text-sm font-semibold transition-colors ${
-              selected ? "border-navy bg-navy text-white" : "border-edge bg-plate text-ink hover:bg-tile"
-            }`}
+            className={chipClass(selected)}
           >
             {label}
           </button>

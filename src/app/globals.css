@@ -27,9 +27,6 @@
   --color-free: #2f7d5b;
   --color-dock: #c4861a;
   --color-late: #b4432f;
-  /* Kept for the public page, which still uses the old name. */
-  --color-accent: #1d2b3a;
-  --color-accent-strong: #2c4157;
 
   --text-h1: 2rem;
   --text-h1--line-height: 2.5rem;
