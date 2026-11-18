@@ -29,6 +29,11 @@ export function queryDate(today: string): string {
   return today;
 }
 
+/** The ISO date n days after (or before, if negative) the given ISO date. */
+export function addDays(date: string, days: number): string {
+  return new Date(Date.parse(`${date}T00:00:00.000Z`) + days * MS_PER_DAY).toISOString().slice(0, 10);
+}
+
 /** Whole days from a to b (b minus a). Both must be valid ISO dates. */
 export function daysBetween(a: string, b: string): number {
   return Math.round((Date.parse(`${b}T00:00:00.000Z`) - Date.parse(`${a}T00:00:00.000Z`)) / MS_PER_DAY);

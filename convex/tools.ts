@@ -2,7 +2,7 @@ import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireUser } from "./lib/auth";
 import { queryDate } from "./lib/dates";
-import { toolIdsOnLoan, userLookup } from "./lib/loanViews";
+import { availabilityByTool, toolIdsOnLoan, userLookup } from "./lib/loanViews";
 import { removeTool } from "./lib/toolRemoval";
 import { categoryValidator, conditionValidator, LIMITS, singleLine } from "./lib/validators";
 
@@ -53,18 +53,35 @@ export const list = query({
         category ? q.eq("status", "active").eq("category", category) : q.eq("status", "active"),
       )
       .take(200);
-    const onLoan = await toolIdsOnLoan(ctx, today);
+    const availability = await availabilityByTool(ctx, today);
+    // The viewer's own pending requests, newest first, so the first one per tool is the most recent.
+    const mine = await ctx.db
+      .query("loans")
+      .withIndex("by_borrower", (q) => q.eq("borrowerId", me._id))
+      .order("desc")
+      .take(200);
+    const myPending = new Map<string, { startDate: string; endDate: string }>();
+    for (const l of mine) {
+      if (l.status === "pending" && !myPending.has(l.toolId)) {
+        myPending.set(l.toolId, { startDate: l.startDate, endDate: l.endDate });
+      }
+    }
     const users = userLookup(ctx);
     return await Promise.all(
       tools.map(async (t) => {
         const owner = await users(t.ownerId);
+        const a = availability(t._id);
         return {
           _id: t._id,
           name: t.name,
           category: t.category,
           condition: t.condition,
           description: t.description,
-          availability: onLoan.has(t._id) ? ("on_loan" as const) : ("available" as const),
+          availability: a.outUntil !== null ? ("on_loan" as const) : ("available" as const),
+          outUntil: a.outUntil,
+          late: a.late,
+          bookings: a.bookings,
+          myPendingRequest: myPending.get(t._id) ?? null,
           ownerFirstName: owner?.firstName ?? "Unknown",
           ownerTrustedLender: owner?.trustedLender ?? false,
           isMine: t.ownerId === me._id,
@@ -83,7 +100,16 @@ export const myListings = query({
       .query("tools")
       .withIndex("by_owner", (q) => q.eq("ownerId", me._id))
       .collect();
-    const onLoan = await toolIdsOnLoan(ctx, today);
+    const availability = await availabilityByTool(ctx, today);
+    const pending = await ctx.db
+      .query("loans")
+      .withIndex("by_owner", (q) => q.eq("ownerId", me._id))
+      .order("desc")
+      .take(1000); // Capped instead of paginated.
+    const pendingCount = new Map<string, number>();
+    for (const l of pending) {
+      if (l.status === "pending") pendingCount.set(l.toolId, (pendingCount.get(l.toolId) ?? 0) + 1);
+    }
     return tools
       .filter((t) => t.status === "active")
       .map((t) => ({
@@ -92,7 +118,11 @@ export const myListings = query({
         category: t.category,
         condition: t.condition,
         description: t.description,
-        availability: onLoan.has(t._id) ? ("on_loan" as const) : ("available" as const),
+        availability: availability(t._id).outUntil !== null ? ("on_loan" as const) : ("available" as const),
+        outUntil: availability(t._id).outUntil,
+        late: availability(t._id).late,
+        bookings: availability(t._id).bookings,
+        pendingCount: pendingCount.get(t._id) ?? 0,
         createdAt: t.createdAt,
       }));
   },

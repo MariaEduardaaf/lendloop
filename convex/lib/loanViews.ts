@@ -1,5 +1,6 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { QueryCtx } from "../_generated/server";
+import { addDays, rangesOverlap } from "./dates";
 
 // Helpers shared by the queries that return loans and tool availability.
 
@@ -12,6 +13,38 @@ export async function toolIdsOnLoan(ctx: QueryCtx, today: string): Promise<Set<I
     .withIndex("by_status_endDate", (q) => q.eq("status", "approved"))
     .take(1000); // Capped instead of paginated, enough for a neighborhood board.
   return new Set(approved.filter((l) => l.startDate <= today).map((l) => l.toolId));
+}
+
+const BOOKING_WINDOW_DAYS = 14;
+
+export type ToolAvailability = {
+  outUntil: string | null;
+  late: boolean;
+  bookings: { startDate: string; endDate: string }[];
+};
+
+/**
+ * Per tool: the approved loan that is out now (outUntil, late) and the approved loans that
+ * touch the next 14 days. Dates only, never who borrowed: every signed-in user sees the board.
+ */
+export async function availabilityByTool(ctx: QueryCtx, today: string) {
+  const approved = await ctx.db
+    .query("loans")
+    .withIndex("by_status_endDate", (q) => q.eq("status", "approved"))
+    .take(1000); // Capped instead of paginated, enough for a neighborhood board.
+  const window = { startDate: today, endDate: addDays(today, BOOKING_WINDOW_DAYS - 1) };
+  const byTool = new Map<Id<"tools">, ToolAvailability>();
+  for (const l of approved.sort((a, b) => a.startDate.localeCompare(b.startDate))) {
+    const entry = byTool.get(l.toolId) ?? { outUntil: null, late: false, bookings: [] };
+    byTool.set(l.toolId, entry);
+    if (l.startDate <= today) {
+      entry.outUntil = l.endDate;
+      entry.late = l.endDate < today;
+    }
+    if (rangesOverlap(l, window)) entry.bookings.push({ startDate: l.startDate, endDate: l.endDate });
+  }
+  return (toolId: Id<"tools">): ToolAvailability =>
+    byTool.get(toolId) ?? { outUntil: null, late: false, bookings: [] };
 }
 
 /** Most recent automation events of a loan, newest first, for the activity line. */

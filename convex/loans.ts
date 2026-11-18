@@ -137,6 +137,46 @@ export const incoming = query({
       .order("desc")
       .take(VIEW_LIMIT);
     const lookups = { user: userLookup(ctx), tool: toolLookup(ctx) };
-    return await Promise.all(loans.map((l) => toLoanRow(ctx, l, today, lookups)));
+    // Counts only, never tool names or other people. Cached so each borrower is read once.
+    const histories = new Map<Id<"users">, Promise<{ returned: number; returnedLate: number }>>();
+    const history = (borrowerId: Id<"users">) => {
+      if (!histories.has(borrowerId)) {
+        histories.set(
+          borrowerId,
+          ctx.db
+            .query("loans")
+            .withIndex("by_borrower", (q) => q.eq("borrowerId", borrowerId))
+            .take(1000) // Capped instead of paginated, enough for one neighbor's history.
+            .then((all) => {
+              const returned = all.filter((l) => l.status === "returned");
+              return {
+                returned: returned.length,
+                returnedLate: returned.filter((l) => l.returnedAt !== undefined && todayUtc(l.returnedAt) > l.endDate).length,
+              };
+            }),
+        );
+      }
+      return histories.get(borrowerId)!;
+    };
+    return await Promise.all(
+      loans.map(async (l) => ({
+        ...(await toLoanRow(ctx, l, today, lookups)),
+        borrowerTrustedLender: (await lookups.user(l.borrowerId))?.trustedLender ?? false,
+        borrowerHistory: await history(l.borrowerId),
+      })),
+    );
+  },
+});
+
+/** Number of pending requests on my tools, for the nav badge. */
+export const pendingIncomingCount = query({
+  args: {},
+  handler: async (ctx) => {
+    const me = await requireUser(ctx);
+    const loans = await ctx.db
+      .query("loans")
+      .withIndex("by_owner", (q) => q.eq("ownerId", me._id))
+      .take(1000); // Capped instead of paginated, enough for one neighbor's tools.
+    return loans.filter((l) => l.status === "pending").length;
   },
 });

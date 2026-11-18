@@ -184,3 +184,49 @@ describe("loan views", () => {
     expect(await cara.as.query(api.loans.myRequests, { today: todayUtc() })).toHaveLength(0);
   });
 });
+
+describe("incoming borrower context and nav count", () => {
+  it("adds trusted flag and returned history (with late returns) per borrower, counts only", async () => {
+    const { t, ana, ben, cara, tool } = await setup();
+    await t.run((ctx) => ctx.db.patch(ben.id, { trustedLender: true }));
+    const day = 86_400_000;
+    const returned = (endOffset: number, returnedOffset: number, borrowerId = ben.id) =>
+      t.run((ctx) =>
+        ctx.db.insert("loans", {
+          toolId: tool,
+          ownerId: cara.id,
+          borrowerId,
+          startDate: inDays(endOffset - 2),
+          endDate: inDays(endOffset),
+          status: "returned",
+          createdAt: Date.now(),
+          returnedAt: Date.now() + returnedOffset * day,
+        }),
+      );
+    await returned(-10, -10); // on time (same day)
+    await returned(-8, -5); // late
+    await returned(-6, -6, cara.id); // someone else's history
+    await addLoan(t, { toolId: tool, ownerId: cara.id, borrowerId: ben.id, startOffset: 1, endOffset: 2, status: "declined" });
+    await addLoan(t, { toolId: tool, ownerId: ana.id, borrowerId: ben.id, startOffset: 1, endOffset: 2, status: "pending" });
+    await addLoan(t, { toolId: tool, ownerId: ana.id, borrowerId: ben.id, startOffset: 4, endOffset: 5, status: "pending" });
+
+    const rows = await ana.as.query(api.loans.incoming, { today: todayUtc() });
+    expect(rows).toHaveLength(2);
+    for (const r of rows) {
+      expect(r).toMatchObject({ borrowerTrustedLender: true, borrowerHistory: { returned: 2, returnedLate: 1 } });
+    }
+    const mine = await ben.as.query(api.loans.myRequests, { today: todayUtc() });
+    expect(mine[0]).not.toHaveProperty("borrowerHistory");
+  });
+
+  it("pendingIncomingCount requires sign-in and counts only pending requests on my tools", async () => {
+    const { t, ana, ben, tool } = await setup();
+    expect(await errorMessage(t.query(api.loans.pendingIncomingCount, {}))).toBe("Sign in to continue");
+    await addLoan(t, { toolId: tool, ownerId: ana.id, borrowerId: ben.id, startOffset: 1, endOffset: 2, status: "pending" });
+    await addLoan(t, { toolId: tool, ownerId: ana.id, borrowerId: ben.id, startOffset: 3, endOffset: 4, status: "pending" });
+    await addLoan(t, { toolId: tool, ownerId: ana.id, borrowerId: ben.id, startOffset: 5, endOffset: 6, status: "approved" });
+
+    expect(await ana.as.query(api.loans.pendingIncomingCount, {})).toBe(2);
+    expect(await ben.as.query(api.loans.pendingIncomingCount, {})).toBe(0);
+  });
+});

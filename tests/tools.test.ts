@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { todayUtc } from "../convex/lib/dates";
 import { api } from "../convex/_generated/api";
-import { addLoan, addTool, addUser, errorMessage, newBackend } from "./helpers";
+import { addLoan, addTool, addUser, errorMessage, inDays, newBackend } from "./helpers";
 
 // Fake timers keep scheduled notifications pending: no test sends anything.
 beforeEach(() => vi.useFakeTimers());
@@ -62,6 +62,90 @@ describe("tools.list", () => {
     });
     const onlyGarden = await ben.as.query(api.tools.list, { today: todayUtc(), category: "garden" });
     expect(onlyGarden.map((x) => x.name)).toEqual(["Rake"]);
+  });
+});
+
+describe("tool availability details", () => {
+  async function board() {
+    const t = newBackend();
+    const ana = await addUser(t, "ana");
+    const ben = await addUser(t, "ben");
+    const cara = await addUser(t, "cara");
+    const tool = await addTool(t, ana.id, "Drill");
+    return { t, ana, ben, cara, tool };
+  }
+
+  it("returns bookings in the 14-day window, sorted, with dates only", async () => {
+    const { t, ana, ben, cara, tool } = await board();
+    const a = (s: number, e: number) =>
+      addLoan(t, { toolId: tool, ownerId: ana.id, borrowerId: ben.id, startOffset: s, endOffset: e, status: "approved" });
+    await a(10, 12);
+    await a(2, 3);
+    await a(13, 20); // starts on the last day of the window: included
+    await a(14, 15); // first day outside the window
+    await a(-5, -2); // not returned yet: overdue, so it is the loan that is out now
+    await addLoan(t, { toolId: tool, ownerId: ana.id, borrowerId: ben.id, startOffset: 4, endOffset: 5, status: "pending" });
+
+    const [row] = await cara.as.query(api.tools.list, { today: todayUtc() });
+    expect(row.bookings).toEqual([
+      { startDate: inDays(2), endDate: inDays(3) },
+      { startDate: inDays(10), endDate: inDays(12) },
+      { startDate: inDays(13), endDate: inDays(20) },
+    ]);
+    expect(row).toMatchObject({ availability: "on_loan", outUntil: inDays(-2), late: true });
+    // Nobody is identified: no ids or names of borrowers anywhere in the output.
+    const json = JSON.stringify(await cara.as.query(api.tools.list, { today: todayUtc() }));
+    expect(json).not.toContain(ben.id);
+    expect(json).not.toContain("Ben");
+    expect(json).not.toContain("ben@");
+  });
+
+  it("outUntil and late describe the loan that is out now", async () => {
+    const { t, ana, ben, cara, tool } = await board();
+    const loan = await addLoan(t, { toolId: tool, ownerId: ana.id, borrowerId: ben.id, startOffset: -2, endOffset: 3, status: "approved" });
+    expect((await cara.as.query(api.tools.list, { today: todayUtc() }))[0]).toMatchObject({
+      availability: "on_loan",
+      outUntil: inDays(3),
+      late: false,
+    });
+    const first = (await cara.as.query(api.tools.list, { today: todayUtc() }))[0];
+    expect(first.bookings).toEqual([{ startDate: inDays(-2), endDate: inDays(3) }]);
+
+    await t.run((ctx) => ctx.db.patch(loan, { endDate: inDays(-1) }));
+    expect((await cara.as.query(api.tools.list, { today: todayUtc() }))[0]).toMatchObject({
+      availability: "on_loan",
+      outUntil: inDays(-1),
+      late: true,
+      bookings: [],
+    });
+  });
+
+  it("myPendingRequest only shows the viewer's own, most recent first", async () => {
+    const { t, ana, ben, cara, tool } = await board();
+    await addLoan(t, { toolId: tool, ownerId: ana.id, borrowerId: ben.id, startOffset: 1, endOffset: 2, status: "pending" });
+
+    expect((await ben.as.query(api.tools.list, { today: todayUtc() }))[0].myPendingRequest).toEqual({
+      startDate: inDays(1),
+      endDate: inDays(2),
+    });
+    expect((await cara.as.query(api.tools.list, { today: todayUtc() }))[0].myPendingRequest).toBeNull();
+    expect((await ana.as.query(api.tools.list, { today: todayUtc() }))[0].myPendingRequest).toBeNull();
+  });
+
+  it("myListings has the same availability fields plus pendingCount", async () => {
+    const { t, ana, ben, cara, tool } = await board();
+    await addLoan(t, { toolId: tool, ownerId: ana.id, borrowerId: ben.id, startOffset: 1, endOffset: 2, status: "pending" });
+    await addLoan(t, { toolId: tool, ownerId: ana.id, borrowerId: cara.id, startOffset: 5, endOffset: 6, status: "pending" });
+    await addLoan(t, { toolId: tool, ownerId: ana.id, borrowerId: cara.id, startOffset: 8, endOffset: 9, status: "approved" });
+    await addLoan(t, { toolId: tool, ownerId: ana.id, borrowerId: cara.id, startOffset: 11, endOffset: 12, status: "declined" });
+
+    const [row] = await ana.as.query(api.tools.myListings, { today: todayUtc() });
+    expect(row).toMatchObject({
+      pendingCount: 2,
+      outUntil: null,
+      late: false,
+      bookings: [{ startDate: inDays(8), endDate: inDays(9) }],
+    });
   });
 });
 
