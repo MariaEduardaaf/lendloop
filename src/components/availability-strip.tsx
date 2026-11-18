@@ -1,7 +1,8 @@
 import { availabilitySentence, stripCells, type ToolAvailability } from "@/lib/availability";
 import { addDays, formatShort } from "@/lib/format";
 
-const CELL = {
+/** Cell forms, shared with the board key. */
+export const CELL = {
   free: "border-[1.5px] border-edge",
   booked: "border-[1.5px] border-dock bg-dock",
   mine: "border-[1.5px] border-dashed border-dock",
@@ -34,7 +35,7 @@ export function AvailabilityStrip({ today, availability }: { today: string; avai
           <span>{formatShort(addDays(today, cells.length - 1))}</span>
         </div>
       </div>
-      <p className={`mt-1.5 text-sm font-semibold ${TONE[tone]}`}>{text}</p>
+      <p className={`mt-1.5 text-body font-bold ${TONE[tone]}`}>{text}</p>
     </div>
   );
 }

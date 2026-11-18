@@ -83,7 +83,20 @@ export function AppShell({ children }: { children: ReactNode }) {
             ))}
             {me?.role === "admin" && <NavLink href="/admin" label="Admin" />}
           </nav>
-          <div className="flex items-center">
+          <div className="flex items-center gap-4">
+            {/* The nav row scrolls on phones, so the waiting count also sits up here, always in view. */}
+            {waiting ? (
+              <Link
+                href="/incoming"
+                aria-label={`Incoming requests, ${waiting} waiting`}
+                className="flex items-center gap-2 text-sm font-semibold text-on-navy hover:text-white sm:hidden"
+              >
+                Incoming
+                <span aria-hidden="true" className="grid h-5 min-w-5 place-items-center rounded-full bg-dock px-1.5 text-xs font-bold text-navy">
+                  {waiting}
+                </span>
+              </Link>
+            ) : null}
             <UserButton />
           </div>
         </div>

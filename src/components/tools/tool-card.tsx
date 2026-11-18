@@ -28,8 +28,14 @@ export function ToolCard({ tool, today }: { tool: ToolRow; today: string }) {
         <AvailabilityStrip today={today} availability={tool} />
       </div>
       <div className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-3 border-t border-steel pt-3">
-        <Initial name={tool.ownerFirstName} />
-        <span className="text-sm">{tool.ownerFirstName}</span>
+        {tool.isMine ? (
+          <span className="text-sm font-semibold">You</span>
+        ) : (
+          <>
+            <Initial name={tool.ownerFirstName} />
+            <span className="text-sm">{tool.ownerFirstName}</span>
+          </>
+        )}
         {tool.ownerTrustedLender && <TrustedSeal />}
         {tool.isMine ? (
           <span className="ml-auto text-sm font-semibold text-muted">Your tool</span>

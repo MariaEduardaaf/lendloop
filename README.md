@@ -57,17 +57,17 @@ through a tunnel and use the deployment's `.convex.site` URL as `CONVEX_SITE_URL
    }
    ```
 
-   These are the only personal fields in the token, and the only ones the app reads. A user who
-   signs up without a first name is shown as "Neighbor". To avoid that, turn on Require first and
-   last name under User & authentication, User model.
-4. Add the API keys (Configure, API keys) to `.env.local`:
+   These are the only personal fields in the token, and the only ones the app reads.
+4. Make first name required at sign-up (User & authentication, User model, Require first and last
+   name), because LendLoop shows neighbors by first name only and falls back to "Neighbor" without one.
+5. Add the API keys (Configure, API keys) to `.env.local`:
 
    ```bash
    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
    CLERK_SECRET_KEY=sk_test_...
    ```
 
-5. Tell Convex which issuer to trust:
+6. Tell Convex which issuer to trust:
 
    ```bash
    npx convex env set CLERK_JWT_ISSUER_DOMAIN https://your-app.clerk.accounts.dev

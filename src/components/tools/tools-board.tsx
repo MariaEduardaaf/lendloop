@@ -6,15 +6,22 @@ import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { CATEGORY_LABELS, type Category } from "@/lib/labels";
 import { useToday } from "@/lib/use-today";
+import { CELL } from "../availability-strip";
 import { Button, linkButtonClass } from "../button";
 import { EmptyState } from "../empty-state";
 import { Loading } from "../feedback";
 import { inputClass } from "../field";
 import { PageHeader } from "../page-header";
+import { TrustedSeal } from "../trusted-seal";
 import { BoardRail, railLoans } from "./board-rail";
 import { CategoryFilter } from "./category-filter";
 import { ToolCard } from "./tool-card";
-import { TRUSTED_LENDER_MEANING } from "../trusted-seal";
+
+const KEY = [
+  { state: "booked", label: "Booked" },
+  { state: "free", label: "Free" },
+  { state: "mine", label: "Your request" },
+] as const;
 
 /**
  * The board: every active tool with its next 14 days, filtered by category on the server and
@@ -37,7 +44,7 @@ export function ToolsBoard() {
       <div className="lg:col-start-1">
         <PageHeader
           title="Tools"
-          description={`Pick one and ask for the dates you need. ${TRUSTED_LENDER_MEANING}`}
+          description="Pick one and ask for the dates you need."
           action={
             <input
               type="search"
@@ -50,6 +57,19 @@ export function ToolsBoard() {
           }
         />
         <CategoryFilter value={category} onChange={setCategory} />
+        {/* Hidden from screen readers: each strip's sentence and the seal's own text say the same. */}
+        <p aria-hidden="true" className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted">
+          {KEY.map(({ state, label }) => (
+            <span key={state} className="inline-flex items-center gap-1.5">
+              <span className={`size-3 rounded-[2px] ${CELL[state]}`} />
+              {label}
+            </span>
+          ))}
+          <span className="inline-flex items-center gap-1.5">
+            <TrustedSeal />
+            marked reliable by the admin
+          </span>
+        </p>
       </div>
       {hasRail && (
         <div className="lg:col-start-2 lg:row-span-2 lg:row-start-1">

@@ -45,14 +45,7 @@ function AdminArea() {
   const [filter, setFilter] = useState<LoanFilter>("all");
   const rows = loans && adminRows(loans, today);
 
-  const count = (f: LoanFilter) => rows?.filter((r) => r.filter === f).length ?? 0;
-  // Late and errors turn red only when there is something to look at.
-  const summary: { label: string; value: number; href: string; filter?: LoanFilter; alarm?: boolean }[] = [
-    { label: "Pending", value: count("pending"), href: "#loans", filter: "pending" },
-    { label: "Out now", value: count("out"), href: "#loans", filter: "out" },
-    { label: "Late", value: count("late"), href: "#loans", filter: "late", alarm: true },
-    { label: "Workflow errors", value: errors?.length ?? 0, href: "#errors", alarm: true },
-  ];
+  const errorCount = errors?.length ?? 0;
 
   return (
     <>
@@ -61,32 +54,17 @@ function AdminArea() {
         <Loading label="Loading the admin overview" />
       ) : (
         <div className="space-y-12">
-          <div className="space-y-5">
-            <ul aria-label="Overview" className="grid grid-cols-2 overflow-hidden rounded-md border border-steel bg-plate sm:grid-cols-4">
-              {summary.map(({ label, value, href, filter: f, alarm }, i) => {
-                const red = alarm && value > 0;
-                return (
-                  <li key={label} className={`border-steel ${i % 2 ? "border-l" : ""} ${i > 1 ? "border-t sm:border-t-0" : ""} ${i === 2 ? "sm:border-l" : ""}`}>
-                    <a
-                      href={href}
-                      onClick={() => f && setFilter(f)}
-                      className="block px-4 py-3 no-underline transition-colors hover:bg-tile"
-                    >
-                      <span className="block label-caps text-muted">{label}</span>
-                      <span className={`mt-1 block text-h2 font-bold tabular-nums ${red ? "text-late" : ""}`}>{value}</span>
-                    </a>
-                  </li>
-                );
-              })}
-            </ul>
-            <nav aria-label="Admin sections" className="flex flex-wrap gap-x-6 gap-y-2 border-b border-steel pb-3 text-sm font-semibold">
-              {SECTIONS.map((s) => (
-                <a key={s.href} href={s.href} className="underline decoration-edge hover:decoration-navy">
-                  {s.label}
-                </a>
-              ))}
-            </nav>
-          </div>
+          <nav aria-label="Admin sections" className="flex flex-wrap gap-x-6 gap-y-2 border-b border-steel pb-3 text-sm font-semibold">
+            {SECTIONS.map((s) => (
+              <a key={s.href} href={s.href} className="underline decoration-edge hover:decoration-navy">
+                {s.label}
+                {/* Errors turn red only when there is something to look at. */}
+                {s.href === "#errors" && (
+                  <span className={`ml-1.5 tabular-nums ${errorCount > 0 ? "text-late" : "text-muted"}`}>{errorCount}</span>
+                )}
+              </a>
+            ))}
+          </nav>
           <AdminLoans rows={rows} filter={filter} onFilter={setFilter} />
           <AdminTools today={today} />
           <AdminUsers />
