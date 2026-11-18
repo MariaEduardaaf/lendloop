@@ -30,23 +30,7 @@ export const loanStatusValidator = v.union(
 
 export const roleValidator = v.union(v.literal("admin"), v.literal("user"));
 
-export const notificationTypeValidator = v.union(
-  v.literal("request.created"),
-  v.literal("request.approved"),
-  v.literal("request.declined"),
-  v.literal("request.cancelled"),
-  v.literal("loan.returned"),
-);
-
 export const NOTIFICATION_TYPES = [
-/**
- * One line of text: control characters and runs of whitespace become a single space.
- * Used for values that end up in e-mail subjects and greetings (tool names, first names).
- */
-export function singleLine(value: string): string {
-  return value.replace(/[\u0000-\u001f\u007f\s]+/g, " ").trim();
-}
-
   "request.created",
   "request.approved",
   "request.declined",
@@ -54,6 +38,14 @@ export function singleLine(value: string): string {
   "loan.returned",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
+
+/**
+ * One line of text: control characters and runs of whitespace become a single space.
+ * Used for values that end up in e-mail subjects and greetings (tool names, first names).
+ */
+export function singleLine(value: string): string {
+  return value.replace(/[\u0000-\u001f\u007f\s]+/g, " ").trim();
+}
 
 export const LIMITS = {
   toolNameMax: 80,

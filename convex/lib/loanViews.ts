@@ -10,7 +10,7 @@ export async function toolIdsOnLoan(ctx: QueryCtx, today: string): Promise<Set<I
   const approved = await ctx.db
     .query("loans")
     .withIndex("by_status_endDate", (q) => q.eq("status", "approved"))
-    .take(1000); // ponytail: no pagination, fine for a neighborhood board
+    .take(1000); // Capped instead of paginated, enough for a neighborhood board.
   return new Set(approved.filter((l) => l.startDate <= today).map((l) => l.toolId));
 }
 
@@ -26,7 +26,6 @@ export async function recentActivity(ctx: QueryCtx, loanId: Id<"loans">) {
       kind: e.kind,
       eventType: e.eventType,
       status: e.status,
-      attempts: e.attempts,
       occurredAt: e.occurredAt,
     }))
     .sort((a, b) => b.occurredAt - a.occurredAt);
@@ -75,9 +74,9 @@ export async function toLoanRow(
     startDate: loan.startDate,
     endDate: loan.endDate,
     status: loan.status,
+    overdue: loan.status === "approved" && loan.endDate < today,
     // A request nobody answered in time. It can no longer be approved, only declined or cancelled.
     expired: loan.status === "pending" && loan.endDate < today,
-    overdue: loan.status === "approved" && loan.endDate < today,
     createdAt: loan.createdAt,
     decidedAt: loan.decidedAt,
     returnedAt: loan.returnedAt,

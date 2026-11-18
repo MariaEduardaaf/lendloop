@@ -34,7 +34,7 @@ export const listPublic = query({
       ctx.db
         .query("tools")
         .withIndex("by_status_category", (q) => q.eq("status", "active"))
-        .take(200), // ponytail: no pagination, fine for a neighborhood board
+        .take(200), // Capped instead of paginated, enough for a neighborhood board.
       toolIdsOnLoan(ctx, today),
     ]);
     return tools.filter((t) => !onLoan.has(t._id)).map((t) => ({ name: t.name, category: t.category }));
