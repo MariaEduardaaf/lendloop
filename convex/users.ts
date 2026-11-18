@@ -1,0 +1,69 @@
+import { ConvexError, v } from "convex/values";
+import { internalMutation, mutation, query } from "./_generated/server";
+import { getCurrentUser } from "./lib/auth";
+import { roleValidator } from "./lib/validators";
+
+/**
+ * Creates or refreshes the signed-in user's row from the Clerk identity.
+ * Never touches role or trustedLender: a new user is always a plain "user".
+ */
+export const store = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new ConvexError("Sign in to continue");
+
+    const firstName = (identity.givenName ?? identity.name?.split(" ")[0] ?? "Neighbor").slice(0, 60);
+    const email = (identity.email ?? "").slice(0, 200);
+
+    const existing = await getCurrentUser(ctx);
+    if (existing) {
+      if (existing.firstName !== firstName || existing.email !== email) {
+        await ctx.db.patch(existing._id, { firstName, email });
+      }
+      return existing._id;
+    }
+    return await ctx.db.insert("users", {
+      tokenIdentifier: identity.tokenIdentifier,
+      firstName,
+      email,
+      role: "user",
+      trustedLender: false,
+      createdAt: Date.now(),
+    });
+  },
+});
+
+/** The current user's own profile (what the UI needs to show or hide the admin area). */
+export const me = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getCurrentUser(ctx);
+    if (!user) return null;
+    return {
+      _id: user._id,
+      firstName: user.firstName,
+      email: user.email,
+      role: user.role,
+      trustedLender: user.trustedLender,
+    };
+  },
+});
+
+/**
+ * The only way to change a role. Internal, so it is reachable from the CLI or the
+ * dashboard only: `npx convex run users:setRole '{"email":"a@b.com","role":"admin"}'`.
+ */
+export const setRole = internalMutation({
+  args: { email: v.string(), role: roleValidator },
+  handler: async (ctx, { email, role }) => {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", email))
+      .unique();
+    if (!user) throw new ConvexError("No user with that email. Sign in once first so the row exists");
+    await ctx.db.patch(user._id, { role });
+    await ctx.db.insert("auditLog", { action: "user.role_set", targetId: user._id, at: Date.now() });
+    return { userId: user._id, role };
+  },
+});
