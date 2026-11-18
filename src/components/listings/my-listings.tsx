@@ -1,0 +1,53 @@
+"use client";
+
+import { useState } from "react";
+import { useMutation, useQuery } from "convex/react";
+import { api } from "@convex/_generated/api";
+import { Button } from "../button";
+import { EmptyState } from "../empty-state";
+import { Loading } from "../feedback";
+import { PageHeader } from "../page-header";
+import { ListingCard } from "./listing-card";
+import { ToolForm } from "./tool-form";
+
+/** My listings with the create form. The form opens from the header button or the empty state. */
+export function MyListings() {
+  const listings = useQuery(api.tools.myListings);
+  const create = useMutation(api.tools.create);
+  const [creating, setCreating] = useState(false);
+
+  const addButton = <Button onClick={() => setCreating(true)}>Add a tool</Button>;
+
+  return (
+    <>
+      <PageHeader
+        title="My listings"
+        description="Tools you are willing to lend. You can edit or remove them at any time."
+        action={!creating && listings && listings.length > 0 ? addButton : undefined}
+      />
+      <div className="space-y-4">
+        {creating && (
+          <section aria-label="New listing" className="rounded-lg border border-stone-300 bg-white p-4 sm:p-5">
+            <h2 className="mb-4 font-medium">New listing</h2>
+            <ToolForm submitLabel="Add tool" onSubmit={(values) => create(values)} onDone={() => setCreating(false)} />
+          </section>
+        )}
+        {listings === undefined && <Loading label="Loading your listings" />}
+        {listings?.length === 0 && !creating && (
+          <EmptyState
+            title="You have not listed any tools yet"
+            hint="Add a drill, a ladder or a camping stove, anything you could lend for a few days."
+            action={addButton}
+          />
+        )}
+        {listings && listings.length > 0 && (
+          <ul className="space-y-3">
+            {listings.map((listing) => (
+              <ListingCard key={listing._id} listing={listing} />
+            ))}
+          </ul>
+        )}
+      </div>
+    </>
+  );
+}
