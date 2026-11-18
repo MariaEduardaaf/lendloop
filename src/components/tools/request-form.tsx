@@ -8,6 +8,7 @@ import type { Id } from "@convex/_generated/dataModel";
 import { todayUtc } from "@convex/lib/dates";
 import { loanDateBounds } from "@/lib/format";
 import { useAction } from "@/lib/use-action";
+import { useRevealFocus } from "@/lib/use-reveal-focus";
 import { Button } from "../button";
 import { ErrorText } from "../feedback";
 import { Field, inputClass } from "../field";
@@ -24,6 +25,7 @@ export function RequestForm({ toolId }: { toolId: Id<"tools"> }) {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const bounds = loanDateBounds(todayUtc(), startDate);
+  const { revealedRef, triggerRef } = useRevealFocus<HTMLInputElement>(open);
 
   function changeStart(value: string) {
     setStartDate(value);
@@ -50,13 +52,20 @@ export function RequestForm({ toolId }: { toolId: Id<"tools"> }) {
       </p>
     );
   }
-  if (!open) return <Button onClick={() => setOpen(true)}>Request to borrow</Button>;
+  if (!open) {
+    return (
+      <Button ref={triggerRef} onClick={() => setOpen(true)}>
+        Request to borrow
+      </Button>
+    );
+  }
 
   return (
     <form onSubmit={submit} className="space-y-3">
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="From">
           <input
+            ref={revealedRef}
             type="date"
             required
             className={inputClass}

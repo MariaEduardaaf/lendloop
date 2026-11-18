@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
-import { useConvexAuth, useQuery } from "convex/react";
+import { useEffect, useState, type ReactNode } from "react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { UserButton } from "@clerk/nextjs";
 import { api } from "@convex/_generated/api";
-import { Loading } from "./feedback";
+import { errorMessage } from "@/lib/errors";
+import { ErrorText, Loading } from "./feedback";
 
 const NAV = [
   { href: "/tools", label: "Tools" },
@@ -31,18 +32,25 @@ function NavLink({ href, label }: { href: string; label: string }) {
 }
 
 /**
- * Header and navigation for the signed-in area. Children render only once the user's
- * Convex row exists (StoreUser creates it right after sign-in), so their queries never
- * hit "account still being set up".
+ * Header and navigation for the signed-in area. It creates or refreshes the user's
+ * Convex row once per visit (`users.store` never changes the role, so repeating it is
+ * harmless) and renders the page only once that row exists, so page queries never hit
+ * "account still being set up".
  */
 export function AppShell({ children }: { children: ReactNode }) {
   const { isLoading, isAuthenticated } = useConvexAuth();
   const me = useQuery(api.users.me);
+  const store = useMutation(api.users.store);
+  const [setupError, setSetupError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isAuthenticated) store().catch((e) => setSetupError(errorMessage(e)));
+  }, [isAuthenticated, store]);
 
   let body: ReactNode = children;
   if (isLoading || (isAuthenticated && me === undefined)) body = <Loading label="Loading your account" />;
   else if (!isAuthenticated) body = <p className="py-8 text-stone-700">Please sign in to continue.</p>;
-  else if (me === null) body = <Loading label="Setting up your account" />;
+  else if (me === null) body = setupError ? <ErrorText message={setupError} /> : <Loading label="Setting up your account" />;
 
   return (
     <div className="min-h-screen">

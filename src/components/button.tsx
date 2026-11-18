@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes } from "react";
+import type { ComponentProps } from "react";
 
 type Variant = "primary" | "secondary" | "danger";
 
@@ -8,7 +8,7 @@ const VARIANTS: Record<Variant, string> = {
   danger: "bg-red-700 text-white hover:bg-red-800",
 };
 
-type Props = ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant };
+type Props = ComponentProps<"button"> & { variant?: Variant };
 
 /** Shared button look. Always a real <button>; type defaults to "button" so forms only submit on purpose. */
 export function Button({ variant = "primary", className = "", type = "button", ...rest }: Props) {

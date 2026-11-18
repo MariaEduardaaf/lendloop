@@ -34,6 +34,7 @@ export function ToolForm({ initial = EMPTY, submitLabel, onSubmit, onDone }: Pro
     <form onSubmit={submit} className="space-y-4">
       <Field label="Name">
         <input
+          autoFocus
           required
           maxLength={LIMITS.toolNameMax}
           className={inputClass}
