@@ -5,3 +5,4 @@ import type { api } from "@convex/_generated/api";
 export type LoanRow = FunctionReturnType<typeof api.loans.myRequests>[number];
 export type ToolRow = FunctionReturnType<typeof api.tools.list>[number];
 export type ListingRow = FunctionReturnType<typeof api.tools.myListings>[number];
+export type IncomingRow = FunctionReturnType<typeof api.loans.incoming>[number];

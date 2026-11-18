@@ -1,45 +1,85 @@
 import type { ReactNode } from "react";
-import { CATEGORY_LABELS } from "@/lib/labels";
-import { formatDateRange } from "@/lib/format";
 import { activityText } from "@/lib/activity";
+import { formatLoanDates } from "@/lib/format";
+import type { Stage, StageKey } from "@/lib/loan-stage";
 import type { LoanRow } from "@/lib/types";
-import { Badge } from "../badge";
+import { CategoryGlyph } from "../category-glyph";
 import { StatusPill } from "../status-pill";
 
+// The stage drawn in the strip's own vocabulary: dashed waiting, hollow coming up,
+// filled out, struck when it ended without a loan.
+const MARK: Record<StageKey, string> = {
+  pending: "border-dashed border-dock",
+  expired: "border-dashed border-edge",
+  upcoming: "border-dock",
+  out: "border-dock bg-dock",
+  due_today: "border-dock bg-dock",
+  late: "border-late bg-late",
+  returned: "border-free bg-free",
+  declined: "border-edge bg-[linear-gradient(135deg,transparent_45%,var(--color-edge)_45%,var(--color-edge)_55%,transparent_55%)]",
+  cancelled: "border-edge bg-[linear-gradient(135deg,transparent_45%,var(--color-edge)_45%,var(--color-edge)_55%,transparent_55%)]",
+};
+
+const TONE: Partial<Record<StageKey, string>> = { late: "text-late", returned: "text-free" };
+
+type Props = {
+  loan: LoanRow;
+  /** Who else is involved, from the viewer's side ("Lender: Cara"). */
+  people: ReactNode;
+  stage?: Stage;
+  /** Extra context under the dates, such as the borrower's history for the lender. */
+  context?: ReactNode;
+  actions?: ReactNode;
+};
+
 /**
- * One loan or request. `people` says who is involved from the viewer's side
- * ("Lender: Ana"), `actions` holds the buttons for that view. The activity list shows
- * what the n8n workflows did for this loan.
+ * One loan or request. The stage sentence leads, the dates are the largest line, and the
+ * automation log is one quiet line (a failed delivery always stays visible).
  */
-export function LoanCard({ loan, people, actions }: { loan: LoanRow; people: string; actions?: ReactNode }) {
+export function LoanCard({ loan, people, stage, context, actions }: Props) {
   return (
-    <li className="rounded-lg border border-stone-200 bg-white p-4 sm:p-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="font-medium text-stone-900">{loan.toolName}</h3>
-          <p className="text-sm text-stone-600">{CATEGORY_LABELS[loan.toolCategory]}</p>
+    <li className="rounded-md border border-steel bg-plate p-4 shadow-[0_1px_2px_rgba(29,43,58,0.08)] sm:p-5">
+      <div className="flex items-start gap-3">
+        <CategoryGlyph category={loan.toolCategory} />
+        <div className="min-w-0 flex-1">
+          <h3 className="text-h3 font-bold break-words">{loan.toolName}</h3>
+          <p className="text-sm text-muted">{people}</p>
         </div>
-        <div className="flex flex-wrap gap-1.5">
-          <StatusPill status={loan.status} />
-          {loan.overdue && <Badge tone="bad">Overdue</Badge>}
-          {loan.expired && <Badge tone="neutral">Dates passed</Badge>}
-        </div>
+        {!stage && <StatusPill status={loan.status} />}
       </div>
-      <dl className="mt-3 grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
-        <div className="flex gap-2">
-          <dt className="text-stone-600">Dates</dt>
-          <dd>{formatDateRange(loan.startDate, loan.endDate)}</dd>
-        </div>
-        <div>{people}</div>
-      </dl>
-      {loan.activity.length > 0 && (
-        <ul aria-label="Automation activity" className="mt-3 space-y-0.5 border-t border-stone-100 pt-3 text-sm text-stone-600">
-          {loan.activity.map((event) => (
-            <li key={`${event.kind}-${event.eventType ?? ""}-${event.occurredAt}`}>{activityText(event)}</li>
-          ))}
-        </ul>
+      {stage && (
+        <p className={`mt-4 flex items-center gap-2 font-semibold ${TONE[stage.key] ?? ""}`}>
+          <span aria-hidden="true" className={`size-3 shrink-0 rounded-[2px] border-[1.5px] ${MARK[stage.key]}`} />
+          {stage.text}
+        </p>
       )}
-      {actions && <div className="mt-4 space-y-2">{actions}</div>}
+      <p className="mt-1 text-h2 font-bold tabular-nums">{formatLoanDates(loan.startDate, loan.endDate)}</p>
+      {context && <div className="mt-3">{context}</div>}
+      {actions && <div className="mt-4 flex flex-wrap items-start gap-2">{actions}</div>}
+      <AutomationLog activity={loan.activity} />
     </li>
+  );
+}
+
+function AutomationLog({ activity }: { activity: LoanRow["activity"] }) {
+  if (activity.length === 0) return null;
+  const [latest, ...older] = activity;
+  const failed = older.find((e) => e.status === "failed");
+  const failure = "font-semibold text-late";
+  return (
+    <div className="mt-4 space-y-1 border-t border-steel pt-3 text-sm text-muted">
+      <p className={latest.status === "failed" ? failure : ""}>{activityText(latest)}</p>
+      {failed && <p className={failure}>{activityText(failed)}</p>}
+      {older.length > 0 && (
+        <details>
+          <summary className="w-fit cursor-pointer underline">Automation history</summary>
+          <ul className="mt-1 space-y-0.5">
+            {older.map((event) => (
+              <li key={`${event.kind}-${event.eventType ?? ""}-${event.occurredAt}`}>{activityText(event)}</li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </div>
   );
 }

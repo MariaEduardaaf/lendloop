@@ -23,7 +23,7 @@ describe("activityText", () => {
   const base = { occurredAt: minutesAgo(3) };
   it("names the notified side from the event type", () => {
     const created = { ...base, kind: "notification" as const, eventType: "request.created", status: "delivered" as const };
-    expect(activityText(created, NOW)).toBe("Owner notified 3 minutes ago");
+    expect(activityText(created, NOW)).toBe("Lender notified 3 minutes ago");
     expect(activityText({ ...created, eventType: "request.approved" }, NOW)).toBe("Borrower notified 3 minutes ago");
   });
   it("shows reminders and failures", () => {

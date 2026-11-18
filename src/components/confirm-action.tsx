@@ -38,11 +38,11 @@ export function ConfirmAction({ label, prompt, confirmLabel, onConfirm }: Props)
   }
   return (
     <div className="space-y-2" role="group" aria-label={prompt}>
-      <p ref={revealedRef} tabIndex={-1} className="text-sm font-medium text-stone-900">
+      <p ref={revealedRef} tabIndex={-1} className="text-sm font-semibold">
         {prompt}
       </p>
       <div className="flex gap-2">
-        <Button variant="danger" onClick={confirm} disabled={pending}>
+        <Button onClick={confirm} disabled={pending}>
           {pending ? "Working..." : confirmLabel}
         </Button>
         <Button variant="secondary" onClick={() => setAsking(false)} disabled={pending}>

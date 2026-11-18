@@ -1,12 +1,15 @@
 import type { ComponentProps } from "react";
 
-type Variant = "primary" | "secondary" | "danger";
+type Variant = "primary" | "secondary";
 
+// Navy fill is the one solid action per decision; everything else is outlined.
 const VARIANTS: Record<Variant, string> = {
-  primary: "bg-accent text-white hover:bg-accent-strong",
-  secondary: "border border-stone-300 bg-white text-stone-900 hover:bg-stone-100",
-  danger: "bg-red-700 text-white hover:bg-red-800",
+  primary: "bg-navy text-white hover:bg-navy-strong",
+  secondary: "border border-navy bg-plate text-navy hover:bg-tile",
 };
+
+const BASE =
+  "inline-flex min-h-10 items-center justify-center rounded-md px-4 text-sm font-semibold transition-colors";
 
 type Props = ComponentProps<"button"> & { variant?: Variant };
 
@@ -15,11 +18,11 @@ export function Button({ variant = "primary", className = "", type = "button", .
   return (
     <button
       type={type}
-      className={`inline-flex min-h-10 items-center justify-center rounded-md px-4 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50 ${VARIANTS[variant]} ${className}`}
+      className={`${BASE} disabled:cursor-not-allowed disabled:opacity-50 ${VARIANTS[variant]} ${className}`}
       {...rest}
     />
   );
 }
 
 /** Same look for a Next <Link>, so a navigation action matches the buttons. */
-export const linkButtonClass = `inline-flex min-h-10 items-center justify-center rounded-md px-4 text-sm font-medium ${VARIANTS.primary}`;
+export const linkButtonClass = `${BASE} ${VARIANTS.primary}`;

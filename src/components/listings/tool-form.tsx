@@ -17,17 +17,21 @@ type Props = {
   onDone: () => void;
 };
 
-const EMPTY: ToolValues = { name: "", category: "power_tools", condition: "good", description: "" };
+// A new listing starts with no category or condition, so nobody files a tool under a silent default.
+type FormValues = Omit<ToolValues, "category" | "condition"> & { category: Category | ""; condition: Condition | "" };
+const EMPTY: FormValues = { name: "", category: "", condition: "", description: "" };
 
 /** Create and edit share this form: the parent decides which mutation runs on submit. */
-export function ToolForm({ initial = EMPTY, submitLabel, onSubmit, onDone }: Props) {
-  const [values, setValues] = useState(initial);
+export function ToolForm({ initial, submitLabel, onSubmit, onDone }: Props) {
+  const [values, setValues] = useState<FormValues>(initial ?? EMPTY);
   const { pending, error, run } = useAction();
-  const set = <K extends keyof ToolValues>(key: K, value: ToolValues[K]) => setValues((v) => ({ ...v, [key]: value }));
+  const set = <K extends keyof FormValues>(key: K, value: FormValues[K]) => setValues((v) => ({ ...v, [key]: value }));
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (await run(() => onSubmit(values))) onDone();
+    const { category, condition } = values;
+    if (!category || !condition) return; // The required selects stop this first.
+    if (await run(() => onSubmit({ ...values, category, condition }))) onDone();
   }
 
   return (
@@ -38,13 +42,17 @@ export function ToolForm({ initial = EMPTY, submitLabel, onSubmit, onDone }: Pro
           required
           maxLength={LIMITS.toolNameMax}
           className={inputClass}
+          placeholder="A drill, a ladder, a camping stove"
           value={values.name}
           onChange={(e) => set("name", e.target.value)}
         />
       </Field>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Category">
-          <select className={inputClass} value={values.category} onChange={(e) => set("category", e.target.value as Category)}>
+          <select required className={inputClass} value={values.category} onChange={(e) => set("category", e.target.value as Category)}>
+            <option value="" disabled>
+              Choose...
+            </option>
             {CATEGORIES.map((c) => (
               <option key={c} value={c}>
                 {CATEGORY_LABELS[c]}
@@ -53,7 +61,10 @@ export function ToolForm({ initial = EMPTY, submitLabel, onSubmit, onDone }: Pro
           </select>
         </Field>
         <Field label="Condition">
-          <select className={inputClass} value={values.condition} onChange={(e) => set("condition", e.target.value as Condition)}>
+          <select required className={inputClass} value={values.condition} onChange={(e) => set("condition", e.target.value as Condition)}>
+            <option value="" disabled>
+              Choose...
+            </option>
             {CONDITIONS.map((c) => (
               <option key={c} value={c}>
                 {CONDITION_LABELS[c]}
@@ -68,6 +79,7 @@ export function ToolForm({ initial = EMPTY, submitLabel, onSubmit, onDone }: Pro
           rows={3}
           maxLength={LIMITS.descriptionMax}
           className={inputClass}
+          placeholder="What it is, what comes with it, anything to know before using it"
           value={values.description}
           onChange={(e) => set("description", e.target.value)}
         />

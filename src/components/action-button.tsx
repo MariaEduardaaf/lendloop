@@ -7,7 +7,7 @@ import { ErrorText } from "./feedback";
 type Props = {
   label: string;
   onClick: () => Promise<unknown>;
-  variant?: "primary" | "secondary" | "danger";
+  variant?: "primary" | "secondary";
 };
 
 /** A button that runs one mutation, disables itself meanwhile and shows the backend error under it. */
