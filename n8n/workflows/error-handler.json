@@ -1,0 +1,97 @@
+{
+  "id": "lendloopErrHandler1",
+  "name": "LendLoop - Error handler",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "aae17b50-bebc-40fb-a040-4340a77873f2",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Canonical string: \"v1:\" + ts + \":\" + METHOD + \":\" + pathname + \":\" + rawBody\nconst crypto = require('crypto');\nfunction sign(secret, method, pathname, rawBody) {\n  const ts = String(Math.floor(Date.now() / 1000));\n  const hex = crypto.createHmac('sha256', secret).update('v1:' + ts + ':' + method + ':' + pathname + ':' + rawBody).digest('hex');\n  return { 'X-LendLoop-Timestamp': ts, 'X-LendLoop-Signature': 'v1=' + hex };\n}\nconst SECRET = $env.N8N_TO_CONVEX_SECRET;\nif (!SECRET) throw new Error('N8N_TO_CONVEX_SECRET is not set in the n8n container');\nconst BASE = String($env.CONVEX_SITE_URL || '').replace(/\\/+$/, '');\nif (!BASE) throw new Error('CONVEX_SITE_URL is not set in the n8n container');\n// Keep error text short and free of e-mail addresses before it leaves n8n.\nconst clean = (s, n) => String(s || '').replace(/[^\\s@<>]+@[^\\s@<>]+/g, '[email]').replace(/\\s+/g, ' ').slice(0, n);\nconst PATHNAME = '/n8n/workflow-errors';\nconst x = $json.execution || {};\nconst report = {\n  executionId: String(x.id ?? 'unknown'),\n  workflowName: clean($json.workflow?.name, 120),\n  nodeName: clean(x.lastNodeExecuted, 120),\n  message: clean(x.error?.message, 300),\n};\nconsole.error('LendLoop workflow error', JSON.stringify(report)); // also kept in this execution's log\nconst body = JSON.stringify(report);\nreturn [{ json: { url: BASE + PATHNAME, body, headers: sign(SECRET, 'POST', PATHNAME, body), report } }];"
+      },
+      "id": "af536e43-ea2e-435d-ac7a-da17c341497e",
+      "name": "Build and sign error report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-LendLoop-Timestamp",
+              "value": "={{ $json.headers['X-LendLoop-Timestamp'] }}"
+            },
+            {
+              "name": "X-LendLoop-Signature",
+              "value": "={{ $json.headers['X-LendLoop-Signature'] }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.body }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "2765e2ca-8e94-423a-a7f7-930bb2648d13",
+      "name": "Report error to Convex",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        0
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Build and sign error report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build and sign error report": {
+      "main": [
+        [
+          {
+            "node": "Report error to Convex",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
