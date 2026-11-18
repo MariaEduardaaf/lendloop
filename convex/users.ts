@@ -1,7 +1,7 @@
 import { ConvexError, v } from "convex/values";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { getCurrentUser } from "./lib/auth";
-import { roleValidator } from "./lib/validators";
+import { roleValidator, singleLine } from "./lib/validators";
 
 /**
  * Creates or refreshes the signed-in user's row from the Clerk identity.
@@ -13,8 +13,11 @@ export const store = mutation({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new ConvexError("Sign in to continue");
 
-    const firstName = (identity.givenName ?? identity.name?.split(" ")[0] ?? "Neighbor").slice(0, 60);
-    const email = (identity.email ?? "").slice(0, 200);
+    // Notifications go to this address, so an account without one cannot use the app.
+    const email = identity.email?.trim().slice(0, 200);
+    if (!email) throw new ConvexError("Your account has no e-mail address. Add one to your profile to use LendLoop");
+    const given = singleLine(identity.givenName ?? "") || singleLine(identity.name ?? "").split(" ")[0];
+    const firstName = given.slice(0, 60) || "Neighbor";
 
     const existing = await getCurrentUser(ctx);
     if (existing) {

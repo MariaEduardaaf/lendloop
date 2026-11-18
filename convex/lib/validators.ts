@@ -39,6 +39,14 @@ export const notificationTypeValidator = v.union(
 );
 
 export const NOTIFICATION_TYPES = [
+/**
+ * One line of text: control characters and runs of whitespace become a single space.
+ * Used for values that end up in e-mail subjects and greetings (tool names, first names).
+ */
+export function singleLine(value: string): string {
+  return value.replace(/[\u0000-\u001f\u007f\s]+/g, " ").trim();
+}
+
   "request.created",
   "request.approved",
   "request.declined",

@@ -78,6 +78,18 @@ describe("tool ownership", () => {
     const stored = await t.run((ctx) => ctx.db.get(id));
     expect(stored).toMatchObject({ name: "Hammer", ownerId: ana.id, status: "active" });
 
+    // Names are one line: they end up in e-mail subjects.
+    const odd = await ana.as.mutation(api.tools.create, {
+      name: "Drill\r\nBcc: someone@example.com\tX",
+      category: "other",
+      condition: "good",
+      description: "Line one\nLine two",
+    });
+    expect(await t.run((ctx) => ctx.db.get(odd))).toMatchObject({
+      name: "Drill Bcc: someone@example.com X",
+      description: "Line one\nLine two",
+    });
+
     expect(
       await errorMessage(
         ana.as.mutation(api.tools.create, { name: " ", category: "other", condition: "good", description: "x" }),

@@ -4,10 +4,10 @@ import { requireUser } from "./lib/auth";
 import { queryDate } from "./lib/dates";
 import { toolIdsOnLoan, userLookup } from "./lib/loanViews";
 import { removeTool } from "./lib/toolRemoval";
-import { categoryValidator, conditionValidator, LIMITS } from "./lib/validators";
+import { categoryValidator, conditionValidator, LIMITS, singleLine } from "./lib/validators";
 
 function cleanName(value: string): string {
-  const name = value.trim();
+  const name = singleLine(value);
   if (name.length < 1 || name.length > LIMITS.toolNameMax) {
     throw new ConvexError(`The name must be 1 to ${LIMITS.toolNameMax} characters`);
   }

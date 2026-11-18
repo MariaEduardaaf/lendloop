@@ -86,6 +86,18 @@ describe("users", () => {
     expect(users[0]).toMatchObject({ role: "admin", trustedLender: true, firstName: "Nina" });
   });
 
+  it("store refuses an identity without an e-mail and keeps first names to one line", async () => {
+    const t = newBackend();
+    const noEmail = { tokenIdentifier: "https://test.clerk.dev|phone", subject: "phone", givenName: "Pat" };
+    expect(await errorMessage(t.withIdentity(noEmail).mutation(api.users.store, {}))).toMatch(/no e-mail address/);
+    expect(await t.run((ctx) => ctx.db.query("users").collect())).toHaveLength(0);
+
+    await t.withIdentity({ ...identity, givenName: "Ana\nMaria" }).mutation(api.users.store, {});
+    await t.withIdentity({ ...identity, tokenIdentifier: "https://test.clerk.dev|full", givenName: undefined, name: "Rui Costa" }).mutation(api.users.store, {});
+    const names = (await t.run((ctx) => ctx.db.query("users").collect())).map((u) => u.firstName);
+    expect(names).toEqual(["Ana Maria", "Rui"]);
+  });
+
   it("store requires a session, me is null when signed out", async () => {
     const t = newBackend();
     expect(await errorMessage(t.mutation(api.users.store, {}))).toBe("Sign in to continue");
