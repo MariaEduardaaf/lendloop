@@ -229,7 +229,8 @@ hides buttons the server would refuse, it never decides.
 
 - Anyone: `tools.listPublic`, which returns only the name and category of available tools.
 - Signed-in users: create, edit and remove their own listings. Request a tool that is not theirs.
-  Cancel their own pending request. Approve, decline or mark as returned only on their own tools.
+  Cancel their own pending request, or an approved loan that has not started (owner or borrower).
+  Approve, decline or mark as returned only on their own tools.
 - Admins: remove any listing, see all loans and users, set the Trusted Lender flag, see workflow errors.
 - Loan rules: no past start date, at most 30 days, at most 90 days ahead, one pending request per
   borrower and tool, no approval that overlaps another approved loan, no approval of a request
@@ -247,7 +248,7 @@ The workflows are in `n8n/workflows/` and are imported by `docker compose up -d`
 ### 1. Request notification (Convex calls n8n)
 
 Every status change of a loan (`request.created`, `request.approved`, `request.declined`,
-`request.cancelled`, `loan.returned`) schedules a delivery in the same Convex mutation that changes
+`request.cancelled`, `loan.returned`, `loan.cancelled`) schedules a delivery in the same Convex mutation that changes
 the loan, so the change and the notification commit together.
 
 1. Convex posts the event to the n8n webhook, signed, with a stable event id (`<loanId>:<type>`).

@@ -28,6 +28,8 @@ export const loanStatusValidator = v.union(
   v.literal("returned"),
 );
 
+export const cancelledByValidator = v.union(v.literal("owner"), v.literal("borrower"));
+
 export const roleValidator = v.union(v.literal("admin"), v.literal("user"));
 
 export const NOTIFICATION_TYPES = [
@@ -36,6 +38,7 @@ export const NOTIFICATION_TYPES = [
   "request.declined",
   "request.cancelled",
   "loan.returned",
+  "loan.cancelled",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 

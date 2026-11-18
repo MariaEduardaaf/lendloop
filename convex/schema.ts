@@ -1,6 +1,7 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import {
+  cancelledByValidator,
   categoryValidator,
   conditionValidator,
   loanStatusValidator,
@@ -48,6 +49,8 @@ export default defineSchema({
     createdAt: v.number(),
     decidedAt: v.optional(v.number()),
     returnedAt: v.optional(v.number()),
+    // Set when an approved loan is cancelled before it starts.
+    cancelledBy: v.optional(cancelledByValidator),
   })
     .index("by_owner", ["ownerId"])
     .index("by_borrower", ["borrowerId"])

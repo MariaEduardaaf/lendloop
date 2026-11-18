@@ -140,10 +140,41 @@ describe("cancel and return", () => {
     expect(await errorMessage(ben.as.mutation(api.loans.cancel, { loanId: loan }))).toMatch(/Only pending/);
   });
 
-  it("an approved loan cannot be cancelled by the borrower", async () => {
+  it("an approved loan that has not started can be cancelled by the owner or the borrower, and the other side is told", async () => {
+    const { t, ana, ben, tool } = await setup();
+    const byOwner = await addLoan(t, { toolId: tool, ownerId: ana.id, borrowerId: ben.id, startOffset: 1, endOffset: 2, status: "approved" });
+    const byBorrower = await addLoan(t, { toolId: tool, ownerId: ana.id, borrowerId: ben.id, startOffset: 5, endOffset: 6, status: "approved" });
+
+    await ana.as.mutation(api.loans.cancel, { loanId: byOwner });
+    await ben.as.mutation(api.loans.cancel, { loanId: byBorrower });
+
+    expect(await t.run((ctx) => ctx.db.get(byOwner))).toMatchObject({ status: "cancelled", cancelledBy: "owner" });
+    expect(await t.run((ctx) => ctx.db.get(byBorrower))).toMatchObject({ status: "cancelled", cancelledBy: "borrower" });
+    const events = await t.run(async (ctx) =>
+      (await ctx.db.system.query("_scheduled_functions").collect()).map((f) => (f.args[0] as { eventId: string }).eventId),
+    );
+    expect(events.sort()).toEqual([`${byBorrower}:loan.cancelled`, `${byOwner}:loan.cancelled`].sort());
+  });
+
+  it("a third user cannot cancel an approved loan, and one that has started cannot be cancelled", async () => {
+    const { t, ana, ben, cara, tool } = await setup();
+    const upcoming = await addLoan(t, { toolId: tool, ownerId: ana.id, borrowerId: ben.id, startOffset: 1, endOffset: 2, status: "approved" });
+    const started = await addLoan(t, { toolId: tool, ownerId: ana.id, borrowerId: ben.id, startOffset: 0, endOffset: 2, status: "approved" });
+
+    expect(await errorMessage(cara.as.mutation(api.loans.cancel, { loanId: upcoming }))).toMatch(/lender or the borrower/);
+    expect(await errorMessage(ana.as.mutation(api.loans.cancel, { loanId: started }))).toMatch(/already started. Mark it as returned/);
+    expect(await errorMessage(ben.as.mutation(api.loans.cancel, { loanId: started }))).toMatch(/already started/);
+    expect(await t.run((ctx) => ctx.db.get(upcoming))).toMatchObject({ status: "approved" });
+    expect(await scheduledCount(t)).toBe(0);
+  });
+
+  it("markReturned is refused before the loan starts", async () => {
     const { t, ana, ben, tool } = await setup();
     const loan = await addLoan(t, { toolId: tool, ownerId: ana.id, borrowerId: ben.id, startOffset: 1, endOffset: 2, status: "approved" });
-    expect(await errorMessage(ben.as.mutation(api.loans.cancel, { loanId: loan }))).toMatch(/Only pending/);
+    expect(await errorMessage(ana.as.mutation(api.loans.markReturned, { loanId: loan }))).toBe(
+      "This loan has not started yet. Cancel it instead",
+    );
+    expect(await t.run((ctx) => ctx.db.get(loan))).toMatchObject({ status: "approved" });
   });
 
   it("only the owner can mark a loan as returned", async () => {

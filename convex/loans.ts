@@ -83,13 +83,29 @@ export const decline = mutation({
   },
 });
 
+/**
+ * Borrower: cancels a pending request. Owner or borrower: cancels an approved loan that has
+ * not started yet, and the other party is told.
+ */
 export const cancel = mutation({
   args: { loanId: v.id("loans") },
   handler: async (ctx, { loanId }) => {
     const me = await requireUser(ctx);
     const loan = await loadLoan(ctx, loanId);
-    if (loan.borrowerId !== me._id) throw new ConvexError("You can only cancel your own requests");
-    if (loan.status !== "pending") throw new ConvexError("Only pending requests can be cancelled");
+    const isBorrower = loan.borrowerId === me._id;
+    const isOwner = loan.ownerId === me._id;
+
+    if (loan.status === "approved") {
+      if (!isBorrower && !isOwner) throw new ConvexError("Only the lender or the borrower can cancel this loan");
+      if (loan.startDate <= todayUtc()) throw new ConvexError("This loan has already started. Mark it as returned instead");
+      const cancelledBy = isOwner ? "owner" : "borrower";
+      await ctx.db.patch(loanId, { status: "cancelled", decidedAt: Date.now(), cancelledBy });
+      await scheduleNotification(ctx, loanId, "loan.cancelled");
+      return;
+    }
+
+    if (!isBorrower) throw new ConvexError("You can only cancel your own requests");
+    if (loan.status !== "pending") throw new ConvexError("Only pending requests and loans that have not started can be cancelled");
 
     await ctx.db.patch(loanId, { status: "cancelled", decidedAt: Date.now() });
     await scheduleNotification(ctx, loanId, "request.cancelled");
@@ -103,6 +119,7 @@ export const markReturned = mutation({
     const loan = await loadLoan(ctx, loanId);
     if (loan.ownerId !== me._id) throw new ConvexError("Only the lender can mark a loan as returned");
     if (loan.status !== "approved") throw new ConvexError("Only approved loans can be marked as returned");
+    if (loan.startDate > todayUtc()) throw new ConvexError("This loan has not started yet. Cancel it instead");
 
     await ctx.db.patch(loanId, { status: "returned", returnedAt: Date.now() });
     await scheduleNotification(ctx, loanId, "loan.returned");
@@ -125,7 +142,7 @@ export const myRequests = query({
   },
 });
 
-/** Requests on my tools, newest first. */
+/** Requests on my tools, newest first, with counts about each borrower to help the owner decide. */
 export const incoming = query({
   args: { today: v.string() },
   handler: async (ctx, args) => {

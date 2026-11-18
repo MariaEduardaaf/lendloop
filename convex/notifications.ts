@@ -46,7 +46,11 @@ export const buildPayload = internalQuery({
     if (!tool || !owner || !borrower) return null;
 
     // The owner hears about new and cancelled requests, the borrower about decisions and returns.
-    const ownerIsRecipient = parsed.type === "request.created" || parsed.type === "request.cancelled";
+    // A cancelled loan goes to whoever did not cancel it.
+    const ownerIsRecipient =
+      parsed.type === "request.created" ||
+      parsed.type === "request.cancelled" ||
+      (parsed.type === "loan.cancelled" && loan.cancelledBy === "borrower");
     const recipient = ownerIsRecipient ? owner : borrower;
     const counterparty = ownerIsRecipient ? borrower : owner;
 

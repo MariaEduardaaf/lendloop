@@ -58,6 +58,17 @@ describe("notification payload", () => {
     expect(payload?.counterpartyFirstName).toBe("Ana");
   });
 
+  it("sends loan.cancelled to the party who did not cancel", async () => {
+    const { t, loanId } = await pendingLoan();
+    const eventId = `${loanId}:loan.cancelled`;
+
+    await t.run((ctx) => ctx.db.patch(loanId, { cancelledBy: "owner" }));
+    expect((await t.query(internal.notifications.buildPayload, { eventId }))?.recipient.email).toBe("ben@example.com");
+
+    await t.run((ctx) => ctx.db.patch(loanId, { cancelledBy: "borrower" }));
+    expect((await t.query(internal.notifications.buildPayload, { eventId }))?.recipient.email).toBe("ana@example.com");
+  });
+
   it("returns null for a malformed or unknown event id", async () => {
     const { t, loanId } = await pendingLoan();
     expect(await t.query(internal.notifications.buildPayload, { eventId: "garbage" })).toBeNull();

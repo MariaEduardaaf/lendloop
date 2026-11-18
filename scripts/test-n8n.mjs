@@ -75,11 +75,11 @@ await result(`${RUN}:dup`); await sleep(1500);
 assert.equal((await mails()).length, 2, "rejected requests and the duplicate must not add emails");
 ok("same eventId twice -> 202 then 200 duplicate, one email, and none for the rejected requests");
 
-const types = ["request.created", "request.approved", "request.declined", "request.cancelled", "loan.returned"];
+const types = ["request.created", "request.approved", "request.declined", "request.cancelled", "loan.returned", "loan.cancelled"];
 for (const type of types) assert.equal((await post(sampleEvent({ type, eventId: `${RUN}:${type}` }))).status, 202);
 await mailCount(2 + types.length);
 const subjects = (await mails()).slice(0, types.length).map((m) => m.Subject).sort();
-ok(`all 5 event types -> 5 emails (${subjects.join(" | ")})`);
+ok(`all 6 event types -> 6 emails (${subjects.join(" | ")})`);
 
 let s = await mockState();
 assert(s.calls.every((c) => c.sigOk), "every call from n8n must carry a valid signature");
