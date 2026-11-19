@@ -4,11 +4,12 @@ type Variant = "primary" | "secondary" | "outline" | "raised";
 type Size = "md" | "lg";
 
 // Solid ink is the one primary per decision; soft fill is the quiet secondary; the outline is
-// the secondary on the mustard card, where a soft fill would vanish.
+// the secondary on the mustard card, where a soft fill would vanish. Its edge (ink at 0.55)
+// measures 3.25:1 on mustard and 3.8:1 on surface, above the 3:1 minimum for a control boundary.
 const VARIANTS: Record<Variant, string> = {
   primary: "bg-ink text-white hover:bg-ink-strong",
   secondary: "bg-soft text-ink hover:bg-soft-strong",
-  outline: "bg-transparent text-ink shadow-[inset_0_0_0_1.5px_rgb(28_27_24/0.35)] hover:bg-white/30",
+  outline: "bg-transparent text-ink shadow-[inset_0_0_0_1.5px_rgb(28_27_24/0.55)] hover:bg-white/30",
   // A light pill lifted off the cream ground, for a quiet action outside a card (the landing top bar).
   raised: "bg-surface text-ink shadow-soft hover:bg-soft",
 };

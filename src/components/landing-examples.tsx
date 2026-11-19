@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { Mail } from "lucide-react";
-import { addDays, formatLoanDates } from "@/lib/format";
+import { addDays, formatLoanSpan } from "@/lib/format";
 import { useToday } from "@/lib/use-today";
 import { AvailabilityStrip } from "./availability-strip";
 import { Avatar } from "./avatar";
@@ -74,7 +74,7 @@ const STEPS: { title: string; text: string; fragment: (today: string) => ReactNo
       <div>
         <StageLabel stageKey="pending" side="borrower" />
         <p className="mt-2.5 text-lg font-bold tracking-[-0.01em] tabular-nums">
-          {formatLoanDates(addDays(today, 3), addDays(today, 5))}
+          {formatLoanSpan(addDays(today, 3), addDays(today, 5))}
         </p>
       </div>
     ),
@@ -97,17 +97,14 @@ const STEPS: { title: string; text: string; fragment: (today: string) => ReactNo
   },
 ];
 
-/** The three steps as numbered cards, each with a small fragment of the screen that does it. */
+/** The three steps in order (an ordered list; the titles carry the sequence), each with a small fragment of the screen that does it. */
 export function HowItWorks() {
   const today = useToday();
   return (
     <ol className="grid gap-5 md:grid-cols-3">
-      {STEPS.map(({ title, text, fragment }, i) => (
+      {STEPS.map(({ title, text, fragment }) => (
         <li key={title} className="flex flex-col rounded-card bg-surface p-5 shadow-soft sm:p-6">
-          <span aria-hidden="true" className="grid size-10 place-items-center rounded-full bg-soft font-bold tabular-nums">
-            {i + 1}
-          </span>
-          <h3 className="mt-4 text-h3 font-bold tracking-[-0.01em]">{title}</h3>
+          <h3 className="text-h3 font-bold tracking-[-0.01em]">{title}</h3>
           <p className="mt-1.5 text-muted">{text}</p>
           <div aria-hidden="true" className="mt-auto pt-6">
             <div className="rounded-[1.25rem] bg-ground p-4">{fragment(today)}</div>

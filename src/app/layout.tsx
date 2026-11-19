@@ -15,7 +15,8 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={urbanist.variable}>
-      <body>
+      {/* Browser extensions add attributes to <body> before React hydrates; this only silences that one mismatch. */}
+      <body suppressHydrationWarning>
         <ClerkProvider>
           <ConvexClientProvider>{children}</ConvexClientProvider>
         </ClerkProvider>

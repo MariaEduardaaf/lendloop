@@ -14,7 +14,7 @@ import { EmptyState } from "../empty-state";
 import { Loading } from "../feedback";
 import { BorrowerContext } from "./borrower-context";
 import { LoanCard } from "./loan-card";
-import { groupLoans, LoanSection } from "./loan-section";
+import { groupLoans, LoanSection, PastLoans } from "./loan-section";
 
 /** Requests on my tools, grouped by what they need from me. */
 export function IncomingRequests() {
@@ -103,17 +103,26 @@ export function IncomingRequests() {
     <div className="grid items-start gap-x-10 gap-y-12 lg:grid-cols-2">
       {sections.map(({ id, title, items }) => (
         <LoanSection key={id} id={`incoming-${id}`} title={title} count={items.length}>
-          {items.map(({ loan, stage }) => (
-            <LoanCard
-              key={loan._id}
-              loan={loan}
+          {id === "past" ? (
+            <PastLoans
+              items={items}
               side="owner"
-              stage={stage}
-              person={{ label: "Borrower", name: loan.borrowerFirstName }}
-              context={stage.key === "pending" && <BorrowerContext loan={loan} onMustard />}
-              actions={actions(loan, stage)}
+              person={(loan) => ({ label: "Borrower", name: loan.borrowerFirstName })}
+              actions={actions}
             />
-          ))}
+          ) : (
+            items.map(({ loan, stage }) => (
+              <LoanCard
+                key={loan._id}
+                loan={loan}
+                side="owner"
+                stage={stage}
+                person={{ label: "Borrower", name: loan.borrowerFirstName }}
+                context={stage.key === "pending" && <BorrowerContext loan={loan} onMustard />}
+                actions={actions(loan, stage)}
+              />
+            ))
+          )}
         </LoanSection>
       ))}
     </div>

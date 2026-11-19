@@ -13,7 +13,7 @@ const TONES: Record<Tone, string> = {
 /** Small pill label. Meaning is always in the words, the colour only supports it. */
 export function Badge({ tone = "neutral", children }: { tone?: Tone; children: ReactNode }) {
   return (
-    <span className={`inline-flex h-7 items-center gap-1.5 rounded-full px-3 text-[0.8125rem] font-bold whitespace-nowrap ${TONES[tone]}`}>
+    <span className={`inline-flex h-7 items-center gap-1.5 rounded-full px-3 text-caption font-bold whitespace-nowrap ${TONES[tone]}`}>
       {children}
     </span>
   );

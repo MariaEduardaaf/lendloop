@@ -5,7 +5,7 @@ import { useMutation } from "convex/react";
 import { ArrowUpRight, Check, Clock, Hourglass, Mail } from "lucide-react";
 import { api } from "@convex/_generated/api";
 import { activityText } from "@/lib/activity";
-import { formatLoanDates, plural } from "@/lib/format";
+import { formatLoanSpan, plural } from "@/lib/format";
 import { loanStage } from "@/lib/loan-stage";
 import type { IncomingRow } from "@/lib/types";
 import { ActionButton } from "../action-button";
@@ -14,15 +14,13 @@ import { ConfirmAction } from "../confirm-action";
 import { BorrowerContext } from "../loans/borrower-context";
 import { StageLabel } from "../loans/stage-label";
 
-const SHOWN = 2;
-
 type Staged = { loan: IncomingRow; stage: ReturnType<typeof loanStage> };
 
-/** The viewer's requests waiting for an answer, and their tools out now with late ones first. */
+/** The viewer's requests waiting for an answer (oldest first), and their tools out now with late ones first. */
 export function railLoans(loans: IncomingRow[], today: string) {
   const staged = loans.map((loan) => ({ loan, stage: loanStage(loan, today, "owner") }));
   return {
-    waiting: staged.filter((s) => s.stage.key === "pending").sort((a, b) => a.loan.startDate.localeCompare(b.loan.startDate)),
+    waiting: staged.filter((s) => s.stage.key === "pending").sort((a, b) => a.loan.createdAt - b.loan.createdAt),
     out: staged
       .filter((s) => s.stage.group === "out")
       .sort((a, b) => Number(b.stage.key === "late") - Number(a.stage.key === "late") || a.loan.endDate.localeCompare(b.loan.endDate)),
@@ -86,16 +84,17 @@ export function BoardRail({ waiting, out }: { waiting: Staged[]; out: Staged[] }
         </h2>
         <p className="mt-3 text-lg text-muted">Your tools that are out or asked for.</p>
         <ul className="mt-7 space-y-4">
-          {waiting.slice(0, SHOWN).map(({ loan }) => (
+          {/* One mustard card at a time: the oldest request. The rest wait behind one quiet link. */}
+          {waiting.slice(0, 1).map(({ loan }) => (
             <li key={loan._id} className="rounded-[1.875rem] bg-mustard p-6 text-ink shadow-soft">
               <div className="flex items-center justify-between gap-3">
                 <StageLabel stageKey="pending" side="owner" />
                 <OpenLink name={`${loan.borrowerFirstName}'s request`} onMustard />
               </div>
-              <h3 className="mt-[18px] text-2xl leading-tight font-bold tracking-[-0.015em]">
+              <h3 className="mt-[18px] text-title leading-tight font-bold tracking-[-0.015em] text-balance">
                 {loan.borrowerFirstName} wants your {loan.toolName}
               </h3>
-              <p className="mt-1.5 font-medium text-mustard-ink">{formatLoanDates(loan.startDate, loan.endDate)}</p>
+              <p className="mt-1.5 font-medium text-mustard-ink">{formatLoanSpan(loan.startDate, loan.endDate)}</p>
               <div className="mt-4 flex items-center gap-2.5 text-[0.9375rem] font-semibold text-mustard-ink">
                 <Avatar name={loan.borrowerFirstName} />
                 <BorrowerContext loan={loan} onMustard />
@@ -119,10 +118,11 @@ export function BoardRail({ waiting, out }: { waiting: Staged[]; out: Staged[] }
               </div>
             </li>
           ))}
-          {waiting.length > SHOWN && (
-            <li>
-              <Link href="/incoming" className="mx-1.5 block font-semibold underline">
-                See all {waiting.length} in Incoming requests
+          {waiting.length > 1 && (
+            <li className="mt-3!">
+              <Link href="/incoming" className="mx-1.5 inline-flex min-h-10 items-center gap-1 font-semibold text-muted underline decoration-1 transition-colors duration-150 ease-out hover:text-ink">
+                {waiting.length - 1} more waiting<span className="sr-only"> in Incoming requests</span>
+                <ArrowUpRight aria-hidden="true" className="size-4" strokeWidth={2} />
               </Link>
             </li>
           )}

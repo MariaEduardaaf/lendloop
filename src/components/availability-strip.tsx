@@ -44,7 +44,7 @@ export function AvailabilityStrip({ today, availability }: { today: string; avai
                 {WEEKDAY.format(date)}
               </span>
               <span
-                className={`grid h-[34px] w-full place-items-center rounded-day text-[0.8125rem] font-bold tabular-nums ${DAY[state]} ${
+                className={`grid h-[34px] w-full place-items-center rounded-day text-caption font-bold tabular-nums ${DAY[state]} ${
                   isToday ? "outline-2 outline-offset-2 outline-ink" : ""
                 }`}
               >

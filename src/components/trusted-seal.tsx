@@ -12,7 +12,7 @@ export function TrustedSeal({ className = "text-moss" }: { className?: string })
   return (
     <span
       title="Marked as reliable by the neighborhood admin"
-      className={`inline-flex items-center gap-1 text-[0.8125rem] font-semibold whitespace-nowrap ${className}`}
+      className={`inline-flex items-center gap-1 text-caption font-semibold whitespace-nowrap ${className}`}
     >
       <ShieldCheck aria-hidden="true" className="size-3.5" strokeWidth={2} />
       Trusted

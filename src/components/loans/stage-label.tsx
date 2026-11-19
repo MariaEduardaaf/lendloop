@@ -22,8 +22,11 @@ export const stageTextClass = (key: StageKey) => (key === "late" ? "text-late" :
 /** The lender's own pending request: the one stage that needs the viewer's decision. */
 export const needsAnswer = (key: StageKey, side: Perspective) => key === "pending" && side === "owner";
 
-/** Short stage chip at the top of a loan card. The stage sentence on the card says the detail. */
-export function StageLabel({ stageKey, side }: { stageKey: StageKey; side: Perspective }) {
+/**
+ * Short stage chip at the top of a loan card. The stage sentence on the card says the detail;
+ * `label` replaces the chip text when that sentence says the same thing with a name ("Waiting for Cara").
+ */
+export function StageLabel({ stageKey, side, label: named }: { stageKey: StageKey; side: Perspective; label?: string }) {
   const ask = needsAnswer(stageKey, side);
   const { label, Icon, className } = LOOKS[stageKey];
   return (
@@ -33,7 +36,7 @@ export function StageLabel({ stageKey, side }: { stageKey: StageKey; side: Persp
       }`}
     >
       <Icon aria-hidden="true" className="size-4 shrink-0" strokeWidth={2} />
-      {ask ? "Needs your answer" : label}
+      {ask ? "Needs your answer" : (named ?? label)}
     </span>
   );
 }

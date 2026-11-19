@@ -64,6 +64,9 @@
   --text-body--line-height: 1.45rem;
   --text-label: 0.9375rem;
   --text-label--line-height: 1.25rem;
+  /* No line height of their own: they sit inside lines set by their container. */
+  --text-title: 1.375rem;
+  --text-caption: 0.8125rem;
 }
 
 /* Form label: sentence case, semibold. */

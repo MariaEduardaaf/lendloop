@@ -40,11 +40,14 @@ export function daysFrom(a: string, b: string): number {
 }
 
 /** "Sat 21 Nov to Mon 23 Nov (3 days)", the dates of a loan as people say them. */
-export function formatLoanDates(startDate: string, endDate: string): string {
+export function formatLoanDates(startDate: string, endDate: string, separator: "brackets" | "dot" = "brackets"): string {
   const days = plural(daysFrom(startDate, endDate) + 1, "day");
   const range = startDate === endDate ? formatDay(startDate) : `${formatDay(startDate)} to ${formatDay(endDate)}`;
-  return `${range} (${days})`;
+  return separator === "dot" ? `${range} · ${days}` : `${range} (${days})`;
 }
+
+/** "Sat 21 Nov to Mon 23 Nov · 3 days", the quieter line under a tool name on a loan card. */
+export const formatLoanSpan = (startDate: string, endDate: string) => formatLoanDates(startDate, endDate, "dot");
 
 export const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 

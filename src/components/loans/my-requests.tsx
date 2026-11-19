@@ -3,14 +3,15 @@
 import Link from "next/link";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
-import { loanStage } from "@/lib/loan-stage";
+import { loanStage, type Stage } from "@/lib/loan-stage";
+import type { LoanRow } from "@/lib/types";
 import { useToday } from "@/lib/use-today";
 import { linkButtonClass } from "../button";
 import { ConfirmAction } from "../confirm-action";
 import { EmptyState } from "../empty-state";
 import { Loading } from "../feedback";
 import { LoanCard } from "./loan-card";
-import { groupLoans, LoanSection } from "./loan-section";
+import { groupLoans, LoanSection, PastLoans } from "./loan-section";
 
 /** Requests I made as a borrower, grouped by where each one stands. */
 export function MyRequests() {
@@ -33,6 +34,19 @@ export function MyRequests() {
     );
   }
 
+  function actions(loan: LoanRow, stage: Stage) {
+    const pending = stage.key === "pending" || stage.key === "expired";
+    if (!pending && stage.key !== "upcoming") return undefined;
+    return (
+      <ConfirmAction
+        label={pending ? "Cancel request" : "Cancel loan"}
+        prompt={pending ? "Cancel this request?" : `Cancel this loan? ${loan.ownerFirstName} will get an email.`}
+        confirmLabel={pending ? "Yes, cancel request" : "Yes, cancel loan"}
+        onConfirm={() => cancel({ loanId: loan._id })}
+      />
+    );
+  }
+
   const groups = groupLoans(loans.map((loan) => ({ loan, stage: loanStage(loan, today, "borrower") })));
   const sections = [
     { id: "waiting", title: "Waiting", items: groups.waiting },
@@ -44,28 +58,25 @@ export function MyRequests() {
     <div className="grid items-start gap-x-10 gap-y-12 lg:grid-cols-2">
       {sections.map(({ id, title, items }) => (
         <LoanSection key={id} id={`requests-${id}`} title={title} count={items.length}>
-          {items.map(({ loan, stage }) => {
-            const pending = stage.key === "pending" || stage.key === "expired";
-            return (
+          {id === "past" ? (
+            <PastLoans
+              items={items}
+              side="borrower"
+              person={(loan) => ({ label: "Lender", name: loan.ownerFirstName })}
+              actions={actions}
+            />
+          ) : (
+            items.map(({ loan, stage }) => (
               <LoanCard
                 key={loan._id}
                 loan={loan}
                 side="borrower"
                 stage={stage}
                 person={{ label: "Lender", name: loan.ownerFirstName }}
-                actions={
-                  (pending || stage.key === "upcoming") && (
-                    <ConfirmAction
-                      label={pending ? "Cancel request" : "Cancel loan"}
-                      prompt={pending ? "Cancel this request?" : `Cancel this loan? ${loan.ownerFirstName} will get an email.`}
-                      confirmLabel={pending ? "Yes, cancel request" : "Yes, cancel loan"}
-                      onConfirm={() => cancel({ loanId: loan._id })}
-                    />
-                  )
-                }
+                actions={actions(loan, stage)}
               />
-            );
-          })}
+            ))
+          )}
         </LoanSection>
       ))}
     </div>

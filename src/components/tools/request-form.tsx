@@ -68,8 +68,9 @@ export function RequestForm({ toolId, toolName, today, availability }: Props) {
     );
   }
 
+  // A line, not a soft fill, around the form: the soft-filled Cancel (as in every form) has to show on it.
   return (
-    <form onSubmit={submit} aria-label={`Request ${toolName}`} className="mt-1 basis-full space-y-4 rounded-[1.375rem] bg-soft p-4">
+    <form onSubmit={submit} aria-label={`Request ${toolName}`} className="mt-1 basis-full space-y-4 rounded-[1.375rem] p-4 shadow-[inset_0_0_0_1px_var(--color-line)]">
       {booked && <p className="text-[0.9375rem] font-semibold">{booked}</p>}
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="From">
@@ -100,7 +101,7 @@ export function RequestForm({ toolId, toolName, today, availability }: Props) {
         <Button type="submit" disabled={pending}>
           {pending ? "Sending..." : "Send request"}
         </Button>
-        <Button variant="outline" onClick={() => setOpen(false)} disabled={pending}>
+        <Button variant="secondary" onClick={() => setOpen(false)} disabled={pending}>
           Cancel
         </Button>
       </div>

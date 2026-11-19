@@ -4,10 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
-import { UserButton } from "@clerk/nextjs";
+import { UserButton, useUser } from "@clerk/nextjs";
 import { Infinity as LoopMark } from "lucide-react";
 import { api } from "@convex/_generated/api";
 import { errorMessage } from "@/lib/errors";
+import { tintFor } from "./avatar";
 import { ErrorText, Loading } from "./feedback";
 
 const NAV = [
@@ -33,7 +34,7 @@ function NavLink({ href, label, count = 0 }: { href: string; label: string; coun
         <>
           <span
             aria-hidden="true"
-            className="grid h-[22px] min-w-[22px] place-items-center rounded-full bg-mustard px-1.5 text-[0.8125rem] font-bold text-ink"
+            className="grid h-[22px] min-w-[22px] place-items-center rounded-full bg-mustard px-1.5 text-caption font-bold text-ink"
           >
             {count}
           </span>
@@ -47,13 +48,43 @@ function NavLink({ href, label, count = 0 }: { href: string; label: string; coun
 /** The LendLoop mark and name, linking home. Shared with the public page's top bar. */
 export function Wordmark({ href }: { href: string }) {
   return (
-    <Link href={href} className="flex w-fit items-center gap-3 text-[1.375rem] font-bold tracking-[-0.01em]">
+    <Link href={href} className="flex w-fit items-center gap-3 text-title font-bold tracking-[-0.01em]">
       <span aria-hidden="true" className="grid size-10 place-items-center rounded-xl bg-ink text-white">
         <LoopMark className="size-[22px]" strokeWidth={1.75} />
       </span>
       LendLoop
     </Link>
   );
+}
+
+const RING = "0 0 0 3px var(--color-surface), var(--shadow-soft)";
+
+/**
+ * Clerk's account button in our look. Without an uploaded photo Clerk shows a cold gradient, so we
+ * hide that image (on the button and in its menu) and draw the initial on the person's tint, like
+ * `Avatar`. `name` null means a real photo, which is kept.
+ */
+function accountAvatar(name: string | null) {
+  const trigger = { userButtonAvatarBox: { width: "2.75rem", height: "2.75rem", boxShadow: RING } };
+  if (name === null) return trigger;
+  return {
+    ...trigger,
+    userButtonAvatarImage: { display: "none" },
+    userPreviewAvatarImage: { display: "none" },
+    avatarBox: {
+      display: "grid",
+      placeContent: "center",
+      // tintFor gives "bg-tint-N"; the colour token behind it is --color-tint-N.
+      backgroundColor: `var(--color-${tintFor(name || "?").slice(3)})`,
+      "&::after": {
+        content: JSON.stringify((name.charAt(0) || "?").toUpperCase()),
+        fontFamily: "var(--font-sans)",
+        fontSize: "1.125rem",
+        fontWeight: 700,
+        color: "var(--color-ink)",
+      },
+    },
+  };
 }
 
 /**
@@ -68,6 +99,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const store = useMutation(api.users.store);
   const waiting = useQuery(api.loans.pendingIncomingCount, me ? {} : "skip");
   const [setupError, setSetupError] = useState<string | null>(null);
+  const { user } = useUser();
 
   useEffect(() => {
     if (isAuthenticated) store().catch((e) => setSetupError(errorMessage(e)));
@@ -99,9 +131,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           {me?.role === "admin" && <NavLink href="/admin" label="Admin" />}
         </nav>
         <div className="flex justify-self-end">
-          <UserButton
-            appearance={{ elements: { avatarBox: "size-11 shadow-[0_0_0_3px_var(--color-surface),var(--shadow-soft)]" } }}
-          />
+          <UserButton appearance={{ elements: accountAvatar(user?.hasImage ? null : (me?.firstName ?? user?.firstName ?? "")) }} />
         </div>
       </header>
       <main id="main" tabIndex={-1} className="mx-auto max-w-[90rem] px-4 pt-8 pb-16 focus:outline-none sm:px-8 lg:pt-11 xl:px-14">

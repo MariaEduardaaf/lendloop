@@ -2,7 +2,7 @@ import { ConvexError } from "convex/values";
 import { describe, expect, it } from "vitest";
 import { activityText } from "../src/lib/activity";
 import { errorMessage } from "../src/lib/errors";
-import { loanDateBounds, relativeTime } from "../src/lib/format";
+import { formatLoanDates, formatLoanSpan, loanDateBounds, relativeTime } from "../src/lib/format";
 import { CATEGORIES, CATEGORY_LABELS } from "../src/lib/labels";
 
 const NOW = Date.parse("2026-11-18T12:00:00.000Z");
@@ -59,6 +59,16 @@ describe("loanDateBounds", () => {
       endMax: "2026-12-17",
     });
     expect(loanDateBounds("2026-11-18", "2026-12-01").endMax).toBe("2026-12-30");
+  });
+});
+
+describe("formatLoanSpan", () => {
+  it("joins the range and the length with a middle dot", () => {
+    expect(formatLoanSpan("2026-11-21", "2026-11-23")).toBe("Sat 21 Nov to Mon 23 Nov · 3 days");
+    expect(formatLoanSpan("2026-11-21", "2026-11-21")).toBe("Sat 21 Nov · 1 day");
+  });
+  it("leaves the bracketed form unchanged", () => {
+    expect(formatLoanDates("2026-11-21", "2026-11-23")).toBe("Sat 21 Nov to Mon 23 Nov (3 days)");
   });
 });
 

@@ -82,7 +82,7 @@ export function AdminLoans({
         <EmptyState title="No loans yet" hint="Requests will appear here as neighbors borrow tools." />
       ) : (
         <div className="rounded-card bg-surface p-3 shadow-soft sm:p-4">
-          <div role="group" aria-label="Filter loans by status" className="flex gap-2 overflow-x-auto p-1 sm:flex-wrap">
+          <div role="group" aria-label="Filter loans by status" className="flex flex-wrap gap-2 p-1">
             {(["all", ...ADMIN_FILTERS] as const).map((f) => (
               <button key={f} type="button" aria-pressed={filter === f} onClick={() => onFilter(f)} className={chipClass(filter === f)}>
                 {FILTER_LABELS[f]} <span className="ml-1 tabular-nums opacity-80">{count(f)}</span>

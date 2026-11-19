@@ -54,23 +54,18 @@ function AdminArea() {
         <Loading label="Loading the admin overview" />
       ) : (
         <>
-          <nav aria-label="Admin sections" className="-mx-4 flex gap-2 overflow-x-auto px-4 py-1 sm:mx-0 sm:flex-wrap sm:px-0">
+          {/* Plain text links: the pill look belongs to the loan filters below, which filter rather than navigate. */}
+          <nav aria-label="Admin sections" className="flex flex-wrap gap-x-6 gap-y-1">
             {SECTIONS.map((s) => (
               <a
                 key={s.href}
                 href={s.href}
-                className="flex h-10 shrink-0 items-center gap-2 rounded-full bg-surface px-[18px] text-[0.9375rem] font-semibold whitespace-nowrap shadow-[inset_0_0_0_1px_var(--color-line)] transition-colors duration-150 ease-out hover:bg-soft"
+                className="flex min-h-10 items-center gap-1.5 text-[0.9375rem] font-semibold decoration-1 hover:underline focus-visible:underline"
               >
                 {s.label}
                 {/* The count turns red only when there is something to look at. */}
                 {s.href === "#errors" && (
-                  <span
-                    className={`grid h-[22px] min-w-[22px] place-items-center rounded-full px-1.5 text-[0.8125rem] font-bold tabular-nums ${
-                      errorCount > 0 ? "bg-tomato text-white" : "bg-soft text-ink"
-                    }`}
-                  >
-                    {errorCount}
-                  </span>
+                  <span className={`tabular-nums ${errorCount > 0 ? "font-bold text-late" : "text-muted"}`}>({errorCount})</span>
                 )}
               </a>
             ))}

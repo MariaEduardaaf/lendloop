@@ -60,7 +60,7 @@ export default function Home() {
             Available now
           </h2>
           <p className="mt-2 max-w-prose text-lg text-muted">
-            Sign in to see which days each tool is free and to ask for the dates you need.
+            These are free today. Sign in to see the days ahead and to ask.
           </p>
           <div className="mt-8">
             <PublicTools />
