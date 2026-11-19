@@ -2,27 +2,12 @@ import type { ReactNode } from "react";
 import { ChevronDown, CircleAlert } from "lucide-react";
 import { activityText } from "@/lib/activity";
 import { formatLoanDates } from "@/lib/format";
-import type { Perspective, Stage, StageKey } from "@/lib/loan-stage";
+import type { Perspective, Stage } from "@/lib/loan-stage";
 import type { LoanRow } from "@/lib/types";
 import { Avatar } from "../avatar";
 import { CategoryGlyph } from "../category-glyph";
 import { StatusPill } from "../status-pill";
-import { needsAnswer, StageLabel } from "./stage-label";
-
-// Small stage dot for the admin loan table, in the same colours as StageLabel.
-export const STAGE_MARK: Record<StageKey, string> = {
-  pending: "border-mustard-edge bg-mustard-tint",
-  expired: "border-free-edge bg-soft",
-  upcoming: "border-moss bg-moss-tint",
-  out: "border-moss bg-moss",
-  due_today: "border-moss bg-moss",
-  late: "border-tomato bg-tomato",
-  returned: "border-free-edge bg-soft",
-  declined: "border-free-edge bg-soft",
-  cancelled: "border-free-edge bg-soft",
-};
-
-export const STAGE_TONE: Partial<Record<StageKey, string>> = { late: "text-late", returned: "text-moss" };
+import { needsAnswer, StageLabel, stageTextClass } from "./stage-label";
 
 type Props = {
   loan: LoanRow;
@@ -55,7 +40,7 @@ export function LoanCard({ loan, side, person, stage, context, actions }: Props)
       <p className="mt-1 text-xl leading-tight font-bold tracking-[-0.01em] text-pretty tabular-nums sm:text-[1.375rem]">
         {formatLoanDates(loan.startDate, loan.endDate)}
       </p>
-      {sentence && stage && <p className={`mt-1.5 font-semibold ${STAGE_TONE[stage.key] ?? "text-muted"}`}>{sentence}</p>}
+      {sentence && stage && <p className={`mt-1.5 font-semibold ${stageTextClass(stage.key)}`}>{sentence}</p>}
       <div className={`mt-4 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[0.9375rem] ${ask ? "text-mustard-ink" : "text-muted"}`}>
         <Avatar name={person.name} />
         <span>

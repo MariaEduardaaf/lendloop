@@ -4,10 +4,11 @@ import type { FunctionReturnType } from "convex/server";
 import type { api } from "@convex/_generated/api";
 import { formatShortRange } from "@/lib/format";
 import { ADMIN_FILTERS, adminFilter, loanStage, type AdminFilter, type Stage } from "@/lib/loan-stage";
+import { Avatar } from "../avatar";
 import { EmptyState } from "../empty-state";
-import { STAGE_MARK, STAGE_TONE } from "../loans/loan-card";
+import { StageLabel, stageTextClass } from "../loans/stage-label";
 import { chipClass } from "../tools/category-filter";
-import { listPlate, Section } from "./section";
+import { Section } from "./section";
 
 type AdminLoan = FunctionReturnType<typeof api.admin.listAllLoans>[number];
 export type AdminRow = { loan: AdminLoan; stage: Stage; filter: AdminFilter };
@@ -39,16 +40,28 @@ export function adminRows(loans: AdminLoan[], today: string): AdminRow[] {
   return rows.sort((a, b) => ADMIN_FILTERS.indexOf(a.filter) - ADMIN_FILTERS.indexOf(b.filter) || within(a, b));
 }
 
-function StageText({ stage }: { stage: Stage }) {
+/** The stage chip with its sentence ("3 days late, was due 15 Nov") under it. */
+function StageCell({ stage }: { stage: Stage }) {
   return (
-    <span className={`flex items-center gap-2 font-semibold ${STAGE_TONE[stage.key] ?? ""}`}>
-      <span aria-hidden="true" className={`size-3 shrink-0 rounded-[2px] border-[1.5px] ${STAGE_MARK[stage.key]}`} />
-      {stage.text}
+    <div className="flex flex-col items-start gap-1.5">
+      <StageLabel stageKey={stage.key} side="admin" />
+      {/* The chip already says "Cancelled". */}
+      {stage.key !== "cancelled" && <span className={`font-semibold ${stageTextClass(stage.key)}`}>{stage.text}</span>}
+    </div>
+  );
+}
+
+/** A first name with its avatar, as on the board. */
+function Person({ name }: { name: string }) {
+  return (
+    <span className="flex items-center gap-2.5">
+      <Avatar name={name} />
+      {name}
     </span>
   );
 }
 
-const TH = "px-4 py-2.5 text-left label-caps text-muted";
+const TH = "px-4 pt-2 pb-3 text-left text-sm font-semibold text-muted";
 
 /** Every loan as a compact table (stacked rows on phones), with status filters. */
 export function AdminLoans({
@@ -68,8 +81,8 @@ export function AdminLoans({
       {rows.length === 0 ? (
         <EmptyState title="No loans yet" hint="Requests will appear here as neighbors borrow tools." />
       ) : (
-        <>
-          <div role="group" aria-label="Filter loans by status" className="-mx-4 flex gap-2 overflow-x-auto px-4 py-1 sm:mx-0 sm:flex-wrap sm:px-0">
+        <div className="rounded-card bg-surface p-3 shadow-soft sm:p-4">
+          <div role="group" aria-label="Filter loans by status" className="flex gap-2 overflow-x-auto p-1 sm:flex-wrap">
             {(["all", ...ADMIN_FILTERS] as const).map((f) => (
               <button key={f} type="button" aria-pressed={filter === f} onClick={() => onFilter(f)} className={chipClass(filter === f)}>
                 {FILTER_LABELS[f]} <span className="ml-1 tabular-nums opacity-80">{count(f)}</span>
@@ -78,15 +91,14 @@ export function AdminLoans({
           </div>
 
           {shown.length === 0 ? (
-            <p className="mt-4 rounded-md border border-dashed border-edge bg-plate px-4 py-6 text-center text-muted">
+            <p className="mt-3 rounded-[1.25rem] bg-ground px-4 py-8 text-center text-muted">
               No loans are {FILTER_LABELS[filter].toLowerCase()} right now.
             </p>
           ) : (
             <>
-              <div className="mt-4 hidden overflow-hidden rounded-md border border-steel bg-plate md:block">
-              <table className="w-full text-sm">
+              <table className="mt-4 hidden w-full text-[0.9375rem] md:table">
                 <caption className="sr-only">Loans, {FILTER_LABELS[filter].toLowerCase()}, late first</caption>
-                <thead className="border-b border-steel bg-ground">
+                <thead className="border-b border-line">
                   <tr>
                     <th scope="col" className={TH}>Tool</th>
                     <th scope="col" className={TH}>Lender</th>
@@ -95,35 +107,34 @@ export function AdminLoans({
                     <th scope="col" className={TH}>Stage</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-steel">
+                <tbody className="divide-y divide-line">
                   {shown.map(({ loan, stage }) => (
                     <tr key={loan._id}>
-                      <th scope="row" className="px-4 py-3 text-left font-bold">{loan.toolName}</th>
-                      <td className="px-4 py-3">{loan.ownerFirstName}</td>
-                      <td className="px-4 py-3">{loan.borrowerFirstName}</td>
-                      <td className="px-4 py-3 whitespace-nowrap tabular-nums">{formatShortRange(loan.startDate, loan.endDate)}</td>
-                      <td className="px-4 py-3"><StageText stage={stage} /></td>
+                      <th scope="row" className="px-4 py-4 text-left font-bold">{loan.toolName}</th>
+                      <td className="px-4 py-4"><Person name={loan.ownerFirstName} /></td>
+                      <td className="px-4 py-4"><Person name={loan.borrowerFirstName} /></td>
+                      <td className="px-4 py-4 font-semibold whitespace-nowrap tabular-nums">{formatShortRange(loan.startDate, loan.endDate)}</td>
+                      <td className="px-4 py-4"><StageCell stage={stage} /></td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              </div>
 
-              <ul className={`mt-4 md:hidden ${listPlate}`}>
+              <ul className="mt-3 divide-y divide-line md:hidden">
                 {shown.map(({ loan, stage }) => (
-                  <li key={loan._id} className="space-y-1 px-4 py-3 text-sm">
-                    <p className="font-bold break-words">{loan.toolName}</p>
-                    <StageText stage={stage} />
-                    <p className="text-muted">
+                  <li key={loan._id} className="space-y-2 px-2 py-4">
+                    <p className="text-h3 font-bold break-words">{loan.toolName}</p>
+                    <StageCell stage={stage} />
+                    <p className="text-[0.9375rem] text-muted">
                       {loan.ownerFirstName} lends to {loan.borrowerFirstName},{" "}
-                      <span className="tabular-nums">{formatShortRange(loan.startDate, loan.endDate)}</span>
+                      <span className="font-semibold text-ink tabular-nums">{formatShortRange(loan.startDate, loan.endDate)}</span>
                     </p>
                   </li>
                 ))}
               </ul>
             </>
           )}
-        </>
+        </div>
       )}
     </Section>
   );

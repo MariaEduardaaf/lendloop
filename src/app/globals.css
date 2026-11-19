@@ -64,31 +64,10 @@
   --text-body--line-height: 1.45rem;
   --text-label: 0.9375rem;
   --text-label--line-height: 1.25rem;
-
-  /*
-   * Legacy names still used by the landing page and /admin. They point at the warm palette so
-   * those pages inherit it; remove each one once nothing references it.
-   */
-  --color-navy: #1c1b18;
-  --color-navy-strong: #34322c;
-  --color-plate: #fcfbf8;
-  --color-steel: #e7e1d5;
-  --color-edge: #857e71;
-  --color-tile: #f1ece2;
-  --color-on-navy: #d9d3c7;
-  --color-signal: #e8c14a;
-  --color-free: #2f5e47;
-  --color-dock: #e8c14a;
 }
 
 /* Form label: sentence case, semibold. */
 @utility field-label {
-  font-size: var(--text-label);
-  line-height: var(--text-label--line-height);
-  font-weight: 600;
-}
-/* Legacy name for the same label style, still used by the admin table. */
-@utility label-caps {
   font-size: var(--text-label);
   line-height: var(--text-label--line-height);
   font-weight: 600;
@@ -122,9 +101,6 @@ a {
 :focus-visible {
   outline: 2px solid var(--color-ink);
   outline-offset: 2px;
-}
-.on-navy :focus-visible {
-  outline-color: #ffffff;
 }
 
 @media (prefers-reduced-motion: reduce) {

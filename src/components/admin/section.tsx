@@ -16,15 +16,19 @@ export function Section({
 }) {
   return (
     <section id={id} aria-labelledby={`${id}-heading`} className="scroll-mt-6">
-      <h2 id={`${id}-heading`} className="flex items-baseline gap-2 text-h2 font-bold">
-        {title}
-        {count !== undefined && <span className="text-base font-semibold text-muted">{count}</span>}
+      <h2 id={`${id}-heading`} className="mx-1 flex items-center gap-3 text-h2 font-bold tracking-[-0.02em]">
+        {title}{" "}
+        {count !== undefined && (
+          <span className="grid h-7 min-w-7 place-items-center rounded-full bg-surface px-2.5 text-[0.9375rem] font-bold text-muted tabular-nums shadow-soft">
+            {count}
+          </span>
+        )}
       </h2>
-      {description && <p className="mt-1 max-w-prose text-sm text-muted">{description}</p>}
-      <div className="mt-4">{children}</div>
+      {description && <p className="mx-1 mt-1.5 max-w-prose text-[0.9375rem] text-muted">{description}</p>}
+      <div className="mt-5">{children}</div>
     </section>
   );
 }
 
-/** The plate that holds an admin list: white, steel edge, rows split by steel rules. */
-export const listPlate = "divide-y divide-steel rounded-md border border-steel bg-plate";
+/** The rounded card that holds an admin list, rows split by quiet rules. Rows bring their own px-4 py-4. */
+export const listCard = "divide-y divide-line rounded-card bg-surface px-2 py-1 shadow-soft sm:px-3";

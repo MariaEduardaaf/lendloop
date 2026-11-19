@@ -22,7 +22,7 @@ export function AdminPanel() {
     return (
       <>
         <PageHeader title="Admin" />
-        <p role="alert" className="rounded-md border border-steel bg-plate p-6">
+        <p role="alert" className="rounded-card bg-surface p-6 shadow-soft sm:p-8">
           Admins only. This area is for LendLoop administrators.
         </p>
       </>
@@ -53,23 +53,35 @@ function AdminArea() {
       {rows === undefined || errors === undefined ? (
         <Loading label="Loading the admin overview" />
       ) : (
-        <div className="space-y-12">
-          <nav aria-label="Admin sections" className="flex flex-wrap gap-x-6 gap-y-2 border-b border-steel pb-3 text-sm font-semibold">
+        <>
+          <nav aria-label="Admin sections" className="-mx-4 flex gap-2 overflow-x-auto px-4 py-1 sm:mx-0 sm:flex-wrap sm:px-0">
             {SECTIONS.map((s) => (
-              <a key={s.href} href={s.href} className="underline decoration-edge hover:decoration-navy">
+              <a
+                key={s.href}
+                href={s.href}
+                className="flex h-10 shrink-0 items-center gap-2 rounded-full bg-surface px-[18px] text-[0.9375rem] font-semibold whitespace-nowrap shadow-[inset_0_0_0_1px_var(--color-line)] transition-colors duration-150 ease-out hover:bg-soft"
+              >
                 {s.label}
-                {/* Errors turn red only when there is something to look at. */}
+                {/* The count turns red only when there is something to look at. */}
                 {s.href === "#errors" && (
-                  <span className={`ml-1.5 tabular-nums ${errorCount > 0 ? "text-late" : "text-muted"}`}>{errorCount}</span>
+                  <span
+                    className={`grid h-[22px] min-w-[22px] place-items-center rounded-full px-1.5 text-[0.8125rem] font-bold tabular-nums ${
+                      errorCount > 0 ? "bg-tomato text-white" : "bg-soft text-ink"
+                    }`}
+                  >
+                    {errorCount}
+                  </span>
                 )}
               </a>
             ))}
           </nav>
-          <AdminLoans rows={rows} filter={filter} onFilter={setFilter} />
-          <AdminTools today={today} />
-          <AdminUsers />
-          <WorkflowErrors errors={errors} />
-        </div>
+          <div className="mt-10 space-y-14">
+            <AdminLoans rows={rows} filter={filter} onFilter={setFilter} />
+            <AdminTools today={today} />
+            <AdminUsers />
+            <WorkflowErrors errors={errors} />
+          </div>
+        </>
       )}
     </>
   );

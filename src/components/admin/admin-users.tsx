@@ -5,10 +5,11 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { useAction } from "@/lib/use-action";
+import { Avatar } from "../avatar";
 import { Badge } from "../badge";
 import { ErrorText, Loading } from "../feedback";
 import { TRUSTED_LENDER_MEANING } from "../trusted-seal";
-import { listPlate, Section } from "./section";
+import { listCard, Section } from "./section";
 
 const MEANING_ID = "trusted-lender-meaning";
 
@@ -27,10 +28,10 @@ function TrustedToggle({ userId, name, checked }: { userId: Id<"users">; name: s
 
   return (
     <div className="space-y-1">
-      <label className="flex min-h-10 items-center gap-2 font-semibold">
+      <label className="flex min-h-10 w-fit cursor-pointer items-center gap-2.5 font-semibold">
         <input
           type="checkbox"
-          className="size-4"
+          className="size-5 cursor-pointer"
           aria-describedby={MEANING_ID}
           checked={checked}
           disabled={pending}
@@ -38,7 +39,7 @@ function TrustedToggle({ userId, name, checked }: { userId: Id<"users">; name: s
         />
         Trusted Lender<span className="sr-only">: {name}</span>
       </label>
-      <p role="status" className="text-sm text-muted">
+      <p role="status" className="text-sm text-moss">
         {done}
       </p>
       <ErrorText message={error} />
@@ -55,23 +56,24 @@ export function AdminUsers() {
       count={users?.length}
       description={
         <span id={MEANING_ID}>
-          {TRUSTED_LENDER_MEANING} The seal shows next to their name on the board and on their requests.
+          {TRUSTED_LENDER_MEANING} The Trusted mark shows next to their name on the board and on their requests.
         </span>
       }
     >
       {users === undefined && <Loading label="Loading users" />}
       {users && (
-        <ul className={listPlate}>
+        <ul className={listCard}>
           {users.map((user) => (
             <li
               key={user._id}
-              className="grid gap-x-6 gap-y-1 px-4 py-3 text-sm md:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)_14rem] md:items-start"
+              className="grid gap-x-6 gap-y-2 px-2 py-4 sm:px-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)_15rem] md:items-start"
             >
-              <p className="flex flex-wrap items-center gap-2 pt-0 font-bold md:pt-2.5">
+              <p className="flex flex-wrap items-center gap-2.5 font-bold md:min-h-10">
+                <Avatar name={user.firstName} />
                 {user.firstName}
                 {user.role === "admin" && <Badge>Admin</Badge>}
               </p>
-              <p className="break-all text-muted md:pt-2.5">{user.email}</p>
+              <p className="text-[0.9375rem] break-all text-muted md:flex md:min-h-10 md:items-center">{user.email}</p>
               <TrustedToggle userId={user._id} name={user.firstName} checked={user.trustedLender} />
             </li>
           ))}

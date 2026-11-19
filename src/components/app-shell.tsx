@@ -44,6 +44,18 @@ function NavLink({ href, label, count = 0 }: { href: string; label: string; coun
   );
 }
 
+/** The LendLoop mark and name, linking home. Shared with the public page's top bar. */
+export function Wordmark({ href }: { href: string }) {
+  return (
+    <Link href={href} className="flex w-fit items-center gap-3 text-[1.375rem] font-bold tracking-[-0.01em]">
+      <span aria-hidden="true" className="grid size-10 place-items-center rounded-xl bg-ink text-white">
+        <LoopMark className="size-[22px]" strokeWidth={1.75} />
+      </span>
+      LendLoop
+    </Link>
+  );
+}
+
 /**
  * Cream top bar with the floating pill navigation for the signed-in area. It creates or refreshes
  * the user's Convex row once per visit (`users.store` never changes the role, so repeating it is
@@ -75,12 +87,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         Skip to content
       </a>
       <header className="mx-auto grid max-w-[90rem] grid-cols-[1fr_auto] items-center gap-x-4 gap-y-4 px-4 pt-4 sm:px-8 sm:pt-7 lg:grid-cols-[1fr_auto_1fr] xl:px-14">
-        <Link href="/tools" className="flex w-fit items-center gap-3 text-[1.375rem] font-bold tracking-[-0.01em]">
-          <span aria-hidden="true" className="grid size-10 place-items-center rounded-xl bg-ink text-white">
-            <LoopMark className="size-[22px]" strokeWidth={1.75} />
-          </span>
-          LendLoop
-        </Link>
+        <Wordmark href="/tools" />
         {/* Below lg the pills take their own row and wrap, so no tab or the waiting count is ever hidden. */}
         <nav
           aria-label="Main"

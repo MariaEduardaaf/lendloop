@@ -1,6 +1,6 @@
 import type { ComponentProps } from "react";
 
-type Variant = "primary" | "secondary" | "outline" | "inverse";
+type Variant = "primary" | "secondary" | "outline" | "raised";
 type Size = "md" | "lg";
 
 // Solid ink is the one primary per decision; soft fill is the quiet secondary; the outline is
@@ -9,8 +9,8 @@ const VARIANTS: Record<Variant, string> = {
   primary: "bg-ink text-white hover:bg-ink-strong",
   secondary: "bg-soft text-ink hover:bg-soft-strong",
   outline: "bg-transparent text-ink shadow-[inset_0_0_0_1.5px_rgb(28_27_24/0.35)] hover:bg-white/30",
-  // The solid action on a dark band (the landing page).
-  inverse: "bg-surface text-ink hover:bg-soft",
+  // A light pill lifted off the cream ground, for a quiet action outside a card (the landing top bar).
+  raised: "bg-surface text-ink shadow-soft hover:bg-soft",
 };
 
 const SIZES: Record<Size, string> = {
@@ -35,6 +35,6 @@ export function Button({ variant = "primary", size = "md", className = "", type 
 }
 
 /** Same look for a Next <Link>, so a navigation action matches the buttons. */
-export const linkButtonClass = `${BASE} ${SIZES.md} ${VARIANTS.primary}`;
-export const quietLinkButtonClass = `${BASE} ${SIZES.md} ${VARIANTS.secondary}`;
-export const inverseLinkButtonClass = `${BASE} ${SIZES.md} ${VARIANTS.inverse}`;
+export const buttonClass = (variant: Variant = "primary", size: Size = "md") => `${BASE} ${SIZES[size]} ${VARIANTS[variant]}`;
+export const linkButtonClass = buttonClass();
+export const quietLinkButtonClass = buttonClass("secondary");

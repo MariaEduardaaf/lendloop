@@ -1,64 +1,65 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { Mail } from "lucide-react";
 import { addDays, formatLoanDates } from "@/lib/format";
 import { useToday } from "@/lib/use-today";
 import { AvailabilityStrip } from "./availability-strip";
+import { Avatar } from "./avatar";
 import { CategoryGlyph } from "./category-glyph";
+import { StageLabel } from "./loans/stage-label";
+import { TrustedSeal } from "./trusted-seal";
 
 // Illustrative pieces of the real interface for the public page. Nothing here is live data:
-// the plate is captioned as an example and the step fragments are hidden from screen readers.
+// the card is hidden from screen readers and its caption says what it shows, and the step
+// fragments are hidden too (the step text says the same in words).
 
-/** One tool plate as signed-in neighbors see it, with its 14-day strip, dated from today. */
-export function ExamplePlate() {
+/** One tool card as signed-in neighbors see it on the board, with its 14 days dated from today. */
+export function ExampleToolCard() {
   const today = useToday();
   const availability = {
-    outUntil: addDays(today, 2),
+    outUntil: null,
     late: false,
-    bookings: [
-      { startDate: addDays(today, -3), endDate: addDays(today, 2) },
-      { startDate: addDays(today, 7), endDate: addDays(today, 9) },
-    ],
+    bookings: [{ startDate: addDays(today, 4), endDate: addDays(today, 6) }],
   };
   return (
     <figure>
-      <div className="rounded-md border border-steel bg-plate p-5 shadow-[0_1px_2px_rgba(29,43,58,0.08),0_12px_32px_-12px_rgba(29,43,58,0.18)]">
-        <div className="flex items-start gap-3">
+      <div aria-hidden="true" className="rounded-card bg-surface p-5 shadow-soft sm:p-6">
+        <div className="flex items-center gap-3.5">
           <CategoryGlyph category="hand_tools" />
           <div className="min-w-0">
-            <p className="text-h3 font-bold">Extension ladder</p>
-            <p className="text-sm text-muted">
-              Hand tools
-              <span aria-hidden="true" className="mx-2 inline-block size-1 rounded-full bg-current align-middle" />
-              Good condition
-            </p>
+            <p className="text-h3 font-bold tracking-[-0.01em]">Extension ladder</p>
+            <p className="mt-0.5 text-[0.9375rem] text-muted">Hand tools · Good</p>
           </div>
         </div>
-        <p className="mt-3 text-sm text-muted">Aluminium, reaches about 5 m. Fits in a car with the seats down.</p>
-        <div className="mt-4">
+        <div className="mt-5">
           <AvailabilityStrip today={today} availability={availability} />
         </div>
+        <div className="mt-5 flex items-center gap-2.5 border-t border-line pt-4">
+          <Avatar name="Ben" />
+          <span className="text-[0.9375rem] font-semibold">Ben</span>
+          <TrustedSeal />
+        </div>
       </div>
-      <figcaption className="mt-3 text-sm text-muted">
-        Example. Every tool shows its next 14 days: filled is booked, hollow is free.
+      <figcaption className="mx-1 mt-3 text-sm text-muted">
+        Example of a tool on the board: its next 14 days, filled when booked.
       </figcaption>
     </figure>
   );
 }
 
-const MARK = "absolute -top-[7px] left-0 size-3 rounded-[2px] border-[1.5px]";
-
-const STEPS: { title: string; text: string; mark: string; fragment: (today: string) => ReactNode }[] = [
+const STEPS: { title: string; text: string; fragment: (today: string) => ReactNode }[] = [
   {
     title: "List a tool",
     text: "Add something you can spare, with its category and condition. It goes on the board for your neighbors.",
-    mark: "border-navy bg-ground",
     fragment: () => (
       <div className="flex flex-wrap gap-2">
         {["Power tools", "Garden", "Camping"].map((label, i) => (
           <span
             key={label}
-            className={`rounded-full border px-3 py-1 text-sm font-semibold ${i === 0 ? "border-navy bg-navy text-white" : "border-edge bg-plate"}`}
+            className={`flex h-9 items-center rounded-full px-4 text-[0.9375rem] font-semibold ${
+              i === 0 ? "bg-ink text-white" : "bg-surface text-ink shadow-[inset_0_0_0_1px_var(--color-line)]"
+            }`}
           >
             {label}
           </span>
@@ -69,42 +70,47 @@ const STEPS: { title: string; text: string; mark: string; fragment: (today: stri
   {
     title: "Ask for dates",
     text: "Pick the days you need. The lender sees who is asking and approves or declines.",
-    mark: "border-dashed border-dock bg-ground",
     fragment: (today) => (
-      <div className="text-sm">
-        <p className="flex items-center gap-2 font-semibold">
-          <span className="size-3 rounded-[2px] border-[1.5px] border-dashed border-dock" />
-          Waiting for the lender
+      <div>
+        <StageLabel stageKey="pending" side="borrower" />
+        <p className="mt-2.5 text-lg font-bold tracking-[-0.01em] tabular-nums">
+          {formatLoanDates(addDays(today, 3), addDays(today, 5))}
         </p>
-        <p className="mt-0.5 font-bold tabular-nums">{formatLoanDates(addDays(today, 3), addDays(today, 5))}</p>
       </div>
     ),
   },
   {
     title: "Get it back",
     text: "The right neighbor is e-mailed whenever a request changes, and a borrower who runs late gets a reminder, so nobody has to chase anyone.",
-    mark: "border-free bg-free",
     fragment: () => (
-      <div className="space-y-0.5 border-t border-steel pt-2 text-sm text-muted">
-        <p>You were e-mailed just now</p>
-        <p>Reminder e-mailed to you 1 day ago</p>
+      <div className="space-y-2 text-[0.9375rem] text-muted">
+        <p className="flex items-center gap-2">
+          <Mail aria-hidden="true" className="size-[18px] shrink-0" strokeWidth={1.75} />
+          Ben was e-mailed 2 hours ago
+        </p>
+        <p className="flex items-center gap-2">
+          <Mail aria-hidden="true" className="size-[18px] shrink-0" strokeWidth={1.75} />
+          Reminder e-mailed to Ben 1 day ago
+        </p>
       </div>
     ),
   },
 ];
 
-/** The three steps on one route line, each with a fragment of the screen that does it. */
+/** The three steps as numbered cards, each with a small fragment of the screen that does it. */
 export function HowItWorks() {
   const today = useToday();
   return (
-    <ol className="grid gap-12 md:grid-cols-3 md:gap-8">
-      {STEPS.map(({ title, text, mark, fragment }) => (
-        <li key={title} className="relative border-t-2 border-navy pt-6">
-          <span aria-hidden="true" className={`${MARK} ${mark}`} />
-          <h3 className="text-h3 font-bold">{title}</h3>
-          <p className="mt-1 max-w-[42ch] text-muted">{text}</p>
-          <div aria-hidden="true" className="mt-5">
-            {fragment(today)}
+    <ol className="grid gap-5 md:grid-cols-3">
+      {STEPS.map(({ title, text, fragment }, i) => (
+        <li key={title} className="flex flex-col rounded-card bg-surface p-5 shadow-soft sm:p-6">
+          <span aria-hidden="true" className="grid size-10 place-items-center rounded-full bg-soft font-bold tabular-nums">
+            {i + 1}
+          </span>
+          <h3 className="mt-4 text-h3 font-bold tracking-[-0.01em]">{title}</h3>
+          <p className="mt-1.5 text-muted">{text}</p>
+          <div aria-hidden="true" className="mt-auto pt-6">
+            <div className="rounded-[1.25rem] bg-ground p-4">{fragment(today)}</div>
           </div>
         </li>
       ))}

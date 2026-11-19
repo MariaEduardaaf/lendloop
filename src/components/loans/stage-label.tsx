@@ -16,6 +16,9 @@ const LOOKS: Record<StageKey, Look> = {
   cancelled: { label: "Cancelled", Icon: Ban, className: "bg-soft text-ink" },
 };
 
+/** Colour for the stage sentence under a loan: late in red, returned in moss, the rest muted. */
+export const stageTextClass = (key: StageKey) => (key === "late" ? "text-late" : key === "returned" ? "text-moss" : "text-muted");
+
 /** The lender's own pending request: the one stage that needs the viewer's decision. */
 export const needsAnswer = (key: StageKey, side: Perspective) => key === "pending" && side === "owner";
 
