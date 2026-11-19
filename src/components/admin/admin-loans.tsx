@@ -1,7 +1,9 @@
 "use client";
 
 import type { FunctionReturnType } from "convex/server";
+import { CircleAlert } from "lucide-react";
 import type { api } from "@convex/_generated/api";
+import { activityText } from "@/lib/activity";
 import { formatShortRange } from "@/lib/format";
 import { ADMIN_FILTERS, adminFilter, loanStage, type AdminFilter, type Stage } from "@/lib/loan-stage";
 import { Avatar } from "../avatar";
@@ -48,6 +50,23 @@ function StageCell({ stage }: { stage: Stage }) {
       {/* The chip already says "Cancelled". */}
       {stage.key !== "cancelled" && <span className={`font-semibold ${stageTextClass(stage.key)}`}>{stage.text}</span>}
     </div>
+  );
+}
+
+/**
+ * The latest automation event of a loan ("Reminder e-mailed to Ben 2 hours ago"). A failed
+ * delivery is red with an icon and the word "failed", so it never passes silently.
+ */
+function LastEmail({ loan }: { loan: AdminLoan }) {
+  const latest = loan.activity[0];
+  if (!latest) return <span className="text-muted">None yet</span>;
+  const text = activityText(latest, loan, "admin");
+  if (latest.status !== "failed") return <span className="text-muted">{text}</span>;
+  return (
+    <span className="flex items-start gap-1.5 font-semibold text-late">
+      <CircleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" strokeWidth={2} />
+      {text}
+    </span>
   );
 }
 
@@ -105,6 +124,7 @@ export function AdminLoans({
                     <th scope="col" className={TH}>Borrower</th>
                     <th scope="col" className={TH}>Dates</th>
                     <th scope="col" className={TH}>Stage</th>
+                    <th scope="col" className={TH}>Last e-mail</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
@@ -115,6 +135,7 @@ export function AdminLoans({
                       <td className="px-4 py-4"><Person name={loan.borrowerFirstName} /></td>
                       <td className="px-4 py-4 font-semibold whitespace-nowrap tabular-nums">{formatShortRange(loan.startDate, loan.endDate)}</td>
                       <td className="px-4 py-4"><StageCell stage={stage} /></td>
+                      <td className="px-4 py-4"><LastEmail loan={loan} /></td>
                     </tr>
                   ))}
                 </tbody>
@@ -128,6 +149,10 @@ export function AdminLoans({
                     <p className="text-[0.9375rem] text-muted">
                       {loan.ownerFirstName} lends to {loan.borrowerFirstName},{" "}
                       <span className="font-semibold text-ink tabular-nums">{formatShortRange(loan.startDate, loan.endDate)}</span>
+                    </p>
+                    <p className="text-[0.9375rem]">
+                      <span className="sr-only">Last e-mail: </span>
+                      <LastEmail loan={loan} />
                     </p>
                   </li>
                 ))}

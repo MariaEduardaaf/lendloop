@@ -14,6 +14,7 @@ Stack: Next.js 16 (App Router), Clerk, Convex, n8n (self-hosted with Docker), Ty
 - [Automation with n8n](#automation-with-n8n)
 - [Security decisions](#security-decisions)
 - [Data minimization](#data-minimization)
+- [UX decisions](#ux-decisions)
 - [Tests](#tests)
 - [Known limits](#known-limits)
 - [Running this in production](docs/PRODUCTION.md)
@@ -150,8 +151,8 @@ There is no way to become an admin from the app. See [Security decisions](#secur
 ## Try it
 
 **Request notification.** Sign in, open Tools and request one of the demo tools. Mailpit shows
-"New borrow request" addressed to the demo owner, and the request under My requests shows
-"Owner notified just now". To play both sides (approve, decline, mark as returned), sign in with a
+"New borrow request" addressed to the demo lender, and the request under My requests shows
+"Cara was e-mailed just now" (with the lender's name). To play both sides (approve, decline, mark as returned), sign in with a
 second account in another browser profile and request a tool you listed with the first one.
 
 **Overdue reminder.** The workflow runs every day at 09:00. To run it now:
@@ -160,8 +161,8 @@ second account in another browser profile and request a tool you listed with the
 docker compose exec -e N8N_RUNNERS_BROKER_PORT=5680 n8n n8n execute --id=lendloopOverdue001
 ```
 
-Mailpit shows the reminder for the seeded overdue loan, and the loan shows "Reminder sent just now"
-(visible to an admin under All loans). Run the command again: no second e-mail, because Convex
+Mailpit shows the reminder for the seeded overdue loan, and the admin page shows "Reminder e-mailed
+to Ben just now" in the Last e-mail column of that loan. Run the command again: no second e-mail, because Convex
 skips loans that already have today's reminder. The extra variable only keeps the one-off command
 from colliding with a port of the running instance.
 
@@ -173,8 +174,8 @@ docker compose stop mailpit
 docker compose start mailpit
 ```
 
-The loan shows "Notification failed", and the admin page lists the failed run under Recent workflow
-errors.
+The loan shows "E-mail to ... failed" in red, and the admin page lists the failed run under
+Workflow errors.
 
 ## Architecture
 
@@ -218,7 +219,7 @@ tests/                 vitest + convex-test
 - `loans`: tool, owner, borrower, start and end date, status
   (`pending`, `approved`, `declined`, `cancelled`, `returned`).
 - `automationEvents`: one row per notification or reminder, with a unique idempotency key. This is
-  what the app reads to show "Owner notified 3 minutes ago" or "Reminder sent 2 days ago".
+  what the app reads to show "Cara was e-mailed 3 minutes ago" or "Reminder e-mailed to Ben 2 days ago".
 - `workflowErrors`: failed n8n runs reported by the error workflow, shown to admins.
 - `auditLog`: admin actions (listing removed, trusted lender changed, role changed).
 
@@ -353,10 +354,30 @@ role each write an audit row.
 - n8n keeps execution data for 14 days for debugging. Locally that is useful, in production it
   should be limited to failed runs (see `docs/PRODUCTION.md`).
 
+## UX decisions
+
+- **Borrowing is about dates, so dates are on the board.** Every tool shows its next 14 days as
+  day pills (free, booked, your request, late) with one sentence under them ("Out, back Fri 20
+  Nov"). Nobody has to ask blind and be declined.
+- **A loan says what it is waiting on.** Cards read "Waiting for Cara", "Coming up", "Out now",
+  "3 days late" instead of database states, and are grouped by what needs doing. Past loans are
+  compact rows.
+- **One decision stands out.** A request that needs your answer is the only solid colour card and
+  Approve the only solid button on the screen. Red means late and nothing else, and colour is
+  never the only signal: every state also has words.
+- **No dead ends, no accidents.** Decline, cancel, mark returned and delete confirm inline. An
+  approved loan can be cancelled by either side until it starts; after that only "mark returned"
+  is offered, and the server enforces both.
+- **Automation is visible but quiet.** Each loan shows its latest e-mail ("Reminder e-mailed to
+  Ben 2 days ago"), with the history one click away. A failed delivery is red and stays visible.
+- **Accessible by default.** Text contrast is at least 4.5:1, inputs have a visible edge, every
+  action works from the keyboard with a visible focus ring and a skip link, focus moves into a
+  form when it opens and back to its trigger when it closes, and status changes are announced.
+
 ## Tests
 
 ```bash
-pnpm test        # 98 tests: authorization, loan state machine, HMAC, HTTP endpoints, notifications
+pnpm test        # 123 tests: authorization, loan state machine, HMAC, HTTP endpoints, notifications, loan stages
 pnpm typecheck
 pnpm lint
 ```
@@ -371,7 +392,7 @@ node scripts/test-n8n.mjs --smtp-down                                  # 14 chec
 docker compose up -d                                                   # point n8n back at Convex
 ```
 
-It checks valid, altered, expired, future-dated and unsigned requests, duplicates, all five event
+It checks valid, altered, expired, future-dated and unsigned requests, duplicates, all six event
 types, a stopped mail server in both workflows, a write-back that fails once and one that keeps
 failing.
 
