@@ -94,7 +94,7 @@ export function BoardRail({ waiting, out }: { waiting: Staged[]; out: Staged[] }
               <h3 className="mt-[18px] text-title leading-tight font-bold tracking-[-0.015em] text-balance">
                 {loan.borrowerFirstName} wants your {loan.toolName}
               </h3>
-              <p className="mt-1.5 font-medium text-mustard-ink">{formatLoanSpan(loan.startDate, loan.endDate)}</p>
+              <p className="mt-1.5 font-semibold text-mustard-ink">{formatLoanSpan(loan.startDate, loan.endDate)}</p>
               <div className="mt-4 flex items-center gap-2.5 text-[0.9375rem] font-semibold text-mustard-ink">
                 <Avatar name={loan.borrowerFirstName} />
                 <BorrowerContext loan={loan} onMustard />
@@ -132,8 +132,8 @@ export function BoardRail({ waiting, out }: { waiting: Staged[]; out: Staged[] }
                 <StageLabel stageKey={stage.key} side="owner" />
                 <OpenLink name={loan.toolName} />
               </div>
-              <h3 className="mt-3.5 text-[1.3125rem] leading-tight font-bold tracking-[-0.015em]">{loan.toolName}</h3>
-              <p className="mt-1.5 font-medium text-muted">
+              <h3 className="mt-3.5 text-h3 leading-tight font-bold tracking-[-0.015em]">{loan.toolName}</h3>
+              <p className="mt-1.5 font-semibold text-muted">
                 {stage.key === "late" ? (
                   <>
                     With {loan.borrowerFirstName} · <span className="font-semibold text-late">{stage.text}</span>

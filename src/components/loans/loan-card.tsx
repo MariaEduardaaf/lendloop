@@ -31,7 +31,9 @@ export function LoanCard({ loan, side, person, stage, context, actions }: Props)
   const ask = !!stage && needsAnswer(stage.key, side);
   // Where the sentence only restates the chip, say it once: in the chip, with the name if it has one.
   const named = !!stage && !ask && (stage.key === "pending" || stage.key === "declined");
-  const sentence = stage && !ask && !named && stage.key !== "cancelled" && stage.key !== "expired" ? stage.text : null;
+  // An upcoming loan's sentence ("Starts Fri 20 Nov") only repeats the date line under the title.
+  const silent = ["cancelled", "expired", "upcoming"];
+  const sentence = stage && !ask && !named && !silent.includes(stage.key) ? stage.text : null;
   return (
     <li className={`rounded-[1.875rem] p-5 shadow-soft sm:p-6 ${ask ? "bg-mustard text-ink" : "bg-surface"}`}>
       {stage ? <StageLabel stageKey={stage.key} side={side} label={named ? stage.text : undefined} /> : <StatusPill status={loan.status} />}
@@ -50,10 +52,12 @@ export function LoanCard({ loan, side, person, stage, context, actions }: Props)
         <span>
           {person.label}: <span className={`font-semibold ${ask ? "" : "text-ink"}`}>{person.name}</span>
         </span>
-        {/* The dot lives with the context, so a wrap carries it to the next line instead of leaving it dangling. */}
+        {/* On phones the context takes its own line and drops the dot; wider screens keep it inline. */}
         {context && (
-          <span className="inline-flex items-center gap-x-2.5 font-semibold">
-            <span aria-hidden="true">·</span>
+          <span className="inline-flex items-center gap-x-2.5 font-semibold max-sm:basis-full">
+            <span aria-hidden="true" className="max-sm:hidden">
+              ·
+            </span>
             {context}
           </span>
         )}

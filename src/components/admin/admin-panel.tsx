@@ -60,7 +60,7 @@ function AdminArea() {
               <a
                 key={s.href}
                 href={s.href}
-                className="flex min-h-10 items-center gap-1.5 text-[0.9375rem] font-semibold decoration-1 hover:underline focus-visible:underline"
+                className="flex min-h-10 items-center gap-1.5 text-[0.9375rem] font-semibold underline decoration-1 underline-offset-4 hover:decoration-2"
               >
                 {s.label}
                 {/* The count turns red only when there is something to look at. */}
