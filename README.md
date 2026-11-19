@@ -17,6 +17,7 @@ Stack: Next.js 16 (App Router), Clerk, Convex, n8n (self-hosted with Docker), Ty
 - [UX decisions](#ux-decisions)
 - [Tests](#tests)
 - [Known limits](#known-limits)
+- [Design system](docs/DESIGN.md)
 - [Running this in production](docs/PRODUCTION.md)
 
 ## Local setup
@@ -355,6 +356,9 @@ role each write an audit row.
   should be limited to failed runs (see `docs/PRODUCTION.md`).
 
 ## UX decisions
+
+The colours, type, components and their contrast figures are written down in
+[docs/DESIGN.md](docs/DESIGN.md). The decisions behind them:
 
 - **Borrowing is about dates, so dates are on the board.** Every tool shows its next 14 days as
   day pills (free, booked, your request, late) with one sentence under them ("Out, back Fri 20
