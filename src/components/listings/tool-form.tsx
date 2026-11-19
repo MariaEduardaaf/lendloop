@@ -35,7 +35,7 @@ export function ToolForm({ initial, submitLabel, onSubmit, onDone }: Props) {
   }
 
   return (
-    <form onSubmit={submit} className="space-y-4">
+    <form onSubmit={submit} className="space-y-5">
       <Field label="Name">
         <input
           autoFocus
@@ -84,7 +84,7 @@ export function ToolForm({ initial, submitLabel, onSubmit, onDone }: Props) {
           onChange={(e) => set("description", e.target.value)}
         />
       </Field>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2.5">
         <Button type="submit" disabled={pending}>
           {pending ? "Saving..." : submitLabel}
         </Button>

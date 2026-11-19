@@ -41,7 +41,7 @@ export function MyRequests() {
     { id: "past", title: "Past", items: groups.past },
   ];
   return (
-    <div className="grid items-start gap-x-8 gap-y-10 lg:grid-cols-2">
+    <div className="grid items-start gap-x-10 gap-y-12 lg:grid-cols-2">
       {sections.map(({ id, title, items }) => (
         <LoanSection key={id} id={`requests-${id}`} title={title} count={items.length}>
           {items.map(({ loan, stage }) => {
@@ -52,7 +52,7 @@ export function MyRequests() {
                 loan={loan}
                 side="borrower"
                 stage={stage}
-                people={`Lender: ${loan.ownerFirstName}`}
+                person={{ label: "Lender", name: loan.ownerFirstName }}
                 actions={
                   (pending || stage.key === "upcoming") && (
                     <ConfirmAction

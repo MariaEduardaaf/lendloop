@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { Overpass } from "next/font/google";
+import { Urbanist } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ConvexClientProvider } from "@/components/convex-client-provider";
 import "./globals.css";
 
-// Overpass descends from highway signage lettering, the visual world of the app.
-const overpass = Overpass({ subsets: ["latin"], variable: "--font-overpass", display: "swap" });
+// Urbanist: a friendly geometric sans, round enough for the soft cards, clear at body size.
+const urbanist = Urbanist({ subsets: ["latin"], variable: "--font-urbanist", display: "swap" });
 
 export const metadata: Metadata = {
   title: "LendLoop",
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={overpass.variable}>
+    <html lang="en" className={urbanist.variable}>
       <body>
         <ClerkProvider>
           <ConvexClientProvider>{children}</ConvexClientProvider>

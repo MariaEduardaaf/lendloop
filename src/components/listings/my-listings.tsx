@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
+import { Plus } from "lucide-react";
 import { api } from "@convex/_generated/api";
 import { useRevealFocus } from "@/lib/use-reveal-focus";
 import { useToday } from "@/lib/use-today";
@@ -23,6 +24,7 @@ export function MyListings() {
 
   const addButton = (
     <Button ref={triggerRef} onClick={() => setCreating(true)}>
+      <Plus aria-hidden="true" className="size-[18px]" strokeWidth={2} />
       Add a tool
     </Button>
   );
@@ -34,10 +36,10 @@ export function MyListings() {
         description="Tools you are willing to lend. You can edit or remove them at any time."
         action={!creating && listings && listings.length > 0 ? addButton : undefined}
       />
-      <div className="space-y-4">
+      <div className="space-y-6">
         {creating && (
-          <section aria-labelledby="new-listing" className="max-w-2xl rounded-md border border-steel bg-plate p-4 sm:p-5">
-            <h2 id="new-listing" className="mb-4 text-h2 font-bold">
+          <section aria-labelledby="new-listing" className="max-w-2xl rounded-card bg-surface p-5 shadow-soft sm:p-8">
+            <h2 id="new-listing" className="mb-6 text-h2 font-bold tracking-[-0.02em]">
               New listing
             </h2>
             <ToolForm submitLabel="Add tool" onSubmit={(values) => create(values)} onDone={() => setCreating(false)} />
@@ -56,7 +58,7 @@ export function MyListings() {
             <h2 id="listings-heading" className="sr-only">
               Your tools
             </h2>
-            <ul className="grid items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <ul className="grid items-start gap-5 md:grid-cols-2 xl:grid-cols-3">
               {listings.map((listing) => (
                 <ListingCard key={listing._id} listing={listing} today={today} />
               ))}

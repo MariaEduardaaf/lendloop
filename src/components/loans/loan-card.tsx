@@ -1,83 +1,105 @@
 import type { ReactNode } from "react";
+import { ChevronDown, CircleAlert } from "lucide-react";
 import { activityText } from "@/lib/activity";
 import { formatLoanDates } from "@/lib/format";
 import type { Perspective, Stage, StageKey } from "@/lib/loan-stage";
 import type { LoanRow } from "@/lib/types";
+import { Avatar } from "../avatar";
 import { CategoryGlyph } from "../category-glyph";
 import { StatusPill } from "../status-pill";
+import { needsAnswer, StageLabel } from "./stage-label";
 
-// The stage drawn in the strip's own vocabulary: dashed waiting, hollow coming up,
-// filled out, struck when it ended without a loan.
+// Small stage dot for the admin loan table, in the same colours as StageLabel.
 export const STAGE_MARK: Record<StageKey, string> = {
-  pending: "border-dashed border-dock",
-  expired: "border-dashed border-edge",
-  upcoming: "border-dock",
-  out: "border-dock bg-dock",
-  due_today: "border-dock bg-dock",
-  late: "border-late bg-late",
-  returned: "border-free bg-free",
-  declined: "border-edge bg-[linear-gradient(135deg,transparent_45%,var(--color-edge)_45%,var(--color-edge)_55%,transparent_55%)]",
-  cancelled: "border-edge bg-[linear-gradient(135deg,transparent_45%,var(--color-edge)_45%,var(--color-edge)_55%,transparent_55%)]",
+  pending: "border-mustard-edge bg-mustard-tint",
+  expired: "border-free-edge bg-soft",
+  upcoming: "border-moss bg-moss-tint",
+  out: "border-moss bg-moss",
+  due_today: "border-moss bg-moss",
+  late: "border-tomato bg-tomato",
+  returned: "border-free-edge bg-soft",
+  declined: "border-free-edge bg-soft",
+  cancelled: "border-free-edge bg-soft",
 };
 
-export const STAGE_TONE: Partial<Record<StageKey, string>> = { late: "text-late", returned: "text-free" };
+export const STAGE_TONE: Partial<Record<StageKey, string>> = { late: "text-late", returned: "text-moss" };
 
 type Props = {
   loan: LoanRow;
   /** Whose side the card speaks from, for the automation line ("You were e-mailed"). */
   side: Perspective;
-  /** Who else is involved, from the viewer's side ("Lender: Cara"). */
-  people: ReactNode;
+  /** The other party, from the viewer's side ({ label: "Lender", name: "Cara" }). */
+  person: { label: string; name: string };
   stage?: Stage;
-  /** Extra context under the dates, such as the borrower's history for the lender. */
+  /** Extra context next to the other party, such as the borrower's history for the lender. */
   context?: ReactNode;
   actions?: ReactNode;
 };
 
 /**
- * One loan or request. The stage sentence leads, the dates are the largest line, and the
+ * One loan or request. A card that needs the viewer's decision is the solid mustard card; every
+ * other stage is a light card with a stage chip. The dates are the largest line, and the
  * automation log is one quiet line (a failed delivery always stays visible).
  */
-export function LoanCard({ loan, side, people, stage, context, actions }: Props) {
+export function LoanCard({ loan, side, person, stage, context, actions }: Props) {
+  const ask = !!stage && needsAnswer(stage.key, side);
+  // The chip already says "Needs your answer" and "Cancelled"; the sentence would repeat it.
+  const sentence = stage && !ask && stage.key !== "cancelled" ? stage.text : null;
   return (
-    <li className="rounded-md border border-steel bg-plate p-4 shadow-[0_1px_2px_rgba(29,43,58,0.08)] sm:p-5">
-      <div className="flex items-start gap-3">
-        <CategoryGlyph category={loan.toolCategory} />
-        <div className="min-w-0 flex-1">
-          <h3 className="text-h3 font-bold break-words">{loan.toolName}</h3>
-          <p className="text-sm text-muted">{people}</p>
-        </div>
-        {!stage && <StatusPill status={loan.status} />}
+    <li className={`rounded-[1.875rem] p-5 shadow-soft sm:p-6 ${ask ? "bg-mustard text-ink" : "bg-surface"}`}>
+      <div className="flex items-start justify-between gap-3">
+        {stage ? <StageLabel stageKey={stage.key} side={side} /> : <StatusPill status={loan.status} />}
+        <CategoryGlyph category={loan.toolCategory} className={`size-10! ${ask ? "bg-white/45" : "bg-soft"}`} />
       </div>
-      {stage && (
-        <p className={`mt-4 flex items-center gap-2 font-semibold ${STAGE_TONE[stage.key] ?? ""}`}>
-          <span aria-hidden="true" className={`size-3 shrink-0 rounded-[2px] border-[1.5px] ${STAGE_MARK[stage.key]}`} />
-          {stage.text}
-        </p>
-      )}
-      <p className="mt-1 text-h2 font-bold tabular-nums">{formatLoanDates(loan.startDate, loan.endDate)}</p>
-      {context && <div className="mt-3">{context}</div>}
-      {actions && <div className="mt-4 flex flex-wrap items-start gap-2">{actions}</div>}
-      <AutomationLog loan={loan} side={side} />
+      <h3 className="mt-3 text-h3 font-bold tracking-[-0.01em] break-words">{loan.toolName}</h3>
+      <p className="mt-1 text-xl leading-tight font-bold tracking-[-0.01em] text-pretty tabular-nums sm:text-[1.375rem]">
+        {formatLoanDates(loan.startDate, loan.endDate)}
+      </p>
+      {sentence && stage && <p className={`mt-1.5 font-semibold ${STAGE_TONE[stage.key] ?? "text-muted"}`}>{sentence}</p>}
+      <div className={`mt-4 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[0.9375rem] ${ask ? "text-mustard-ink" : "text-muted"}`}>
+        <Avatar name={person.name} />
+        <span>
+          {person.label}: <span className={`font-semibold ${ask ? "" : "text-ink"}`}>{person.name}</span>
+        </span>
+        {context && (
+          <>
+            <span aria-hidden="true">·</span>
+            <span className="font-semibold">{context}</span>
+          </>
+        )}
+      </div>
+      {actions && <div className="mt-5 flex flex-wrap items-start gap-2.5">{actions}</div>}
+      <AutomationLog loan={loan} side={side} onMustard={ask} />
     </li>
   );
 }
 
-function AutomationLog({ loan, side }: { loan: LoanRow; side: Perspective }) {
+function AutomationLog({ loan, side, onMustard }: { loan: LoanRow; side: Perspective; onMustard: boolean }) {
   const { activity } = loan;
   if (activity.length === 0) return null;
   const line = (event: LoanRow["activity"][number]) => activityText(event, loan, side);
   const [latest, ...older] = activity;
   const failed = older.find((e) => e.status === "failed");
-  const failure = "font-semibold text-late";
+  // Late red is too faint on mustard, so a failure there is ink, bold and marked with the icon.
+  const failure = (text: string) => (
+    <p className={`flex items-start gap-1.5 font-semibold ${onMustard ? "text-ink" : "text-late"}`}>
+      <CircleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" strokeWidth={2} />
+      {text}
+    </p>
+  );
   return (
-    <div className="mt-4 space-y-1 border-t border-steel pt-3 text-sm text-muted">
-      <p className={latest.status === "failed" ? failure : ""}>{line(latest)}</p>
-      {failed && <p className={failure}>{line(failed)}</p>}
+    <div
+      className={`mt-5 space-y-1 border-t pt-4 text-sm ${onMustard ? "border-ink/15 text-mustard-ink" : "border-line text-muted"}`}
+    >
+      {latest.status === "failed" ? failure(line(latest)) : <p>{line(latest)}</p>}
+      {failed && failure(line(failed))}
       {older.length > 0 && (
-        <details>
-          <summary className="w-fit cursor-pointer underline">Automation history</summary>
-          <ul className="mt-1 space-y-0.5">
+        <details className="group">
+          <summary className="flex w-fit cursor-pointer list-none items-center gap-1 font-semibold underline decoration-1 underline-offset-[3px] [&::-webkit-details-marker]:hidden">
+            Automation history
+            <ChevronDown aria-hidden="true" className="size-4 group-open:rotate-180" strokeWidth={2} />
+          </summary>
+          <ul className="mt-2 space-y-1">
             {older.map((event) => (
               <li key={`${event.kind}-${event.eventType ?? ""}-${event.occurredAt}`}>{line(event)}</li>
             ))}

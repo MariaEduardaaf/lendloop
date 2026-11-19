@@ -1,41 +1,71 @@
+import { CircleAlert, CircleCheck, Clock } from "lucide-react";
 import { availabilitySentence, stripCells, type ToolAvailability } from "@/lib/availability";
-import { addDays, formatShort } from "@/lib/format";
 
-/** Cell forms, shared with the board key. */
-export const CELL = {
-  free: "border-[1.5px] border-edge",
-  booked: "border-[1.5px] border-dock bg-dock",
-  mine: "border-[1.5px] border-dashed border-dock",
+type DayState = "free" | "booked" | "mine" | "late";
+
+/** Day pill fills, shared with the board legend. */
+export const DAY: Record<DayState, string> = {
+  free: "bg-soft text-ink",
+  booked: "bg-booked text-white",
+  mine: "bg-mustard-tint text-ink shadow-[inset_0_0_0_1.5px_var(--color-mustard-edge)]",
+  late: "bg-tomato text-white",
 };
 
-const TONE = { free: "text-free", out: "text-ink", late: "text-late" };
+const TONE = {
+  free: { className: "text-moss", Icon: CircleCheck },
+  out: { className: "text-ink", Icon: Clock },
+  late: { className: "text-late", Icon: CircleAlert },
+};
+
+const WEEKDAY = new Intl.DateTimeFormat("en-GB", { weekday: "narrow", timeZone: "UTC" });
+const dayOf = (iso: string) => new Date(`${iso}T00:00:00.000Z`);
 
 /**
- * The next 14 days of a tool: filled amber is booked or out, hollow is free, dashed is the
- * viewer's own pending request. The sentence under it is the accessible text; the cells are hidden.
+ * The next 14 days of a tool as rounded day pills: free, booked, the viewer's own request, and
+ * late today. Two rows of seven when the card is narrow, so the dates never shrink. The pills are
+ * hidden from assistive tech; the sentence under them is the accessible text.
  */
 export function AvailabilityStrip({ today, availability }: { today: string; availability: ToolAvailability }) {
   const cells = stripCells(today, availability);
   const { text, tone } = availabilitySentence(today, availability);
+  const { className, Icon } = TONE[tone];
+  // "Free now. Booked 25 to 27 Nov": the state leads in colour, the rest is quieter. Same words.
+  const [head, ...rest] = text.split(". ");
   return (
-    <div>
-      <div aria-hidden="true" className="max-w-[20.75rem]">
-        <span
-          className={`ml-[5px] block size-0 border-x-[5px] border-t-[6px] border-x-transparent ${
-            tone === "late" ? "border-t-late" : "border-t-navy"
-          }`}
-        />
-        <div className="mt-0.5 grid grid-cols-14 gap-1">
-          {cells.map((cell) => (
-            <span key={cell.date} className={`aspect-square rounded-[2px] ${CELL[cell.state]}`} />
-          ))}
-        </div>
-        <div className="mt-1 flex justify-between text-xs text-muted">
-          <span>Today</span>
-          <span>{formatShort(addDays(today, cells.length - 1))}</span>
-        </div>
-      </div>
-      <p className={`mt-1.5 text-body font-bold ${TONE[tone]}`}>{text}</p>
+    <div className="@container">
+      <ol aria-hidden="true" className="grid grid-cols-7 gap-x-1 gap-y-3 @min-[20rem]:grid-cols-14">
+        {cells.map((cell, i) => {
+          const isToday = i === 0;
+          const state: DayState = isToday && availability.late ? "late" : cell.state;
+          const date = dayOf(cell.date);
+          return (
+            <li key={cell.date} className="flex flex-col items-center gap-1.5">
+              <span className={`text-xs leading-none font-semibold ${isToday ? "text-ink" : "text-muted"}`}>
+                {WEEKDAY.format(date)}
+              </span>
+              <span
+                className={`grid h-[34px] w-full place-items-center rounded-day text-[0.8125rem] font-bold tabular-nums ${DAY[state]} ${
+                  isToday ? "outline-2 outline-offset-2 outline-ink" : ""
+                }`}
+              >
+                {date.getUTCDate()}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+      <p className={`mt-5 flex items-start gap-2 text-[0.9375rem] font-semibold ${className}`}>
+        <Icon aria-hidden="true" className="mt-0.5 size-[18px] shrink-0" strokeWidth={1.75} />
+        <span>
+          {head}
+          {rest.length > 0 && (
+            <>
+              .{" "}
+              <span className="font-medium text-muted">{rest.join(". ")}</span>
+            </>
+          )}
+        </span>
+      </p>
     </div>
   );
 }

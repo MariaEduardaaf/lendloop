@@ -1,59 +1,105 @@
 @import "tailwindcss";
 
 /*
- * "Neighborhood station": signage navy shell, off-white ground, white plates with a steel edge.
- * Green, amber and red carry status only, always next to words or a filled/hollow/dashed form.
- * Contrast (WCAG 2.1 AA), measured on white plate / ground:
- *   navy text 14.4 / 13.3, muted text 5.5 / 5.0, free green 5.0 / 4.6, late red 5.6 / 5.1,
- *   control edge 3.8 / 3.5 (inputs, chips, hollow strip cells), dock amber fill 3.1 on white,
- *   navy text on amber 4.6, on-navy muted text 8.1, signal green marker on navy 5.7.
+ * Warm and soft: cream ground, big rounded cards with a soft shadow, pill controls, and colour
+ * that means something (mustard = needs you, moss = free / out with a borrower, tomato = late).
+ * Contrast (WCAG 2.1 AA), measured on surface #FCFBF8 / ground #F3EEE5:
+ *   ink 16.6 / 14.9, muted 6.6 / 5.9 (5.8 on soft), moss 7.2 / 6.5, late text 6.3 / 5.7,
+ *   field edge 3.9 / 3.5 (inputs, selects, textareas, checkboxes).
+ * On fills: white on ink 17.2, on booked 5.6, on moss 7.5, on tomato 5.4; ink on mustard 10.0,
+ *   mustard-ink on mustard 7.1, ink on mustard-tint 13.8, moss on moss-tint 6.0, ink on avatar tints 11.9+.
+ * Avoided: muted (4.0), moss (4.3) and late text (3.8) on mustard; the mustard card uses ink/mustard-ink.
  */
 @theme inline {
-  --font-sans: var(--font-overpass), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-urbanist), ui-sans-serif, system-ui, sans-serif;
 }
 
 @theme {
-  --color-navy: #1d2b3a;
-  --color-navy-strong: #2c4157;
-  --color-ground: #f4f6f3;
-  --color-plate: #ffffff;
-  --color-steel: #d5dce0;
-  --color-edge: #768591;
-  --color-tile: #e9eef0;
-  --color-ink: #1d2b3a;
-  --color-muted: #5d6b78;
-  --color-on-navy: #b9c4cd;
-  --color-signal: #5fb38d;
-  --color-free: #2f7d5b;
-  --color-dock: #c4861a;
-  --color-late: #b4432f;
+  --color-ground: #f3eee5;
+  --color-surface: #fcfbf8;
+  --color-soft: #f1ece2;
+  --color-soft-strong: #e8e1d4;
+  --color-line: #e7e1d5;
+  --color-field: #857e71;
+  --color-ink: #1c1b18;
+  --color-ink-strong: #34322c;
+  --color-muted: #5e5a51;
+  --color-booked: #6e675c;
+  --color-mustard: #e8c14a;
+  --color-mustard-ink: #3d3518;
+  --color-mustard-tint: #f6e6ae;
+  --color-mustard-chip: #f6e3a0;
+  --color-mustard-edge: #d9ae2e;
+  --color-moss: #2f5e47;
+  --color-moss-tint: #dfeae1;
+  --color-tomato: #b9432a;
+  --color-tomato-tint: #f6d8ce;
+  --color-late: #a8361f;
+  --color-free-edge: #d8d0c0;
 
-  --text-h1: 2rem;
-  --text-h1--line-height: 2.5rem;
-  --text-h2: 1.25rem;
-  --text-h2--line-height: 1.75rem;
-  --text-h3: 1.0625rem;
-  --text-h3--line-height: 1.375rem;
-  --text-body: 0.9375rem;
-  --text-body--line-height: 1.4rem;
-  --text-label: 0.75rem;
-  --text-label--line-height: 1rem;
+  /* Initial avatars, one tint per person (see avatar.tsx). */
+  --color-tint-1: #e9d3be;
+  --color-tint-2: #cfddea;
+  --color-tint-3: #ddd3ec;
+  --color-tint-4: #d7e6dc;
+  --color-tint-5: #f1d9c9;
+  --color-tint-6: #e6dfb8;
+
+  --radius-card: 1.75rem;
+  --radius-tile: 1rem;
+  --radius-day: 0.6875rem;
+
+  --shadow-soft: 0 1px 2px rgb(70 55 30 / 0.05), 0 10px 30px -6px rgb(70 55 30 / 0.09);
+  --shadow-press: 0 6px 16px -6px rgb(28 27 24 / 0.45);
+
+  --text-display: 4rem;
+  --text-display--line-height: 1;
+  --text-h1: 2.75rem;
+  --text-h1--line-height: 1;
+  --text-h2: 1.75rem;
+  --text-h2--line-height: 2rem;
+  --text-h3: 1.25rem;
+  --text-h3--line-height: 1.5rem;
+  --text-body: 1rem;
+  --text-body--line-height: 1.45rem;
+  --text-label: 0.9375rem;
+  --text-label--line-height: 1.25rem;
+
+  /*
+   * Legacy names still used by the landing page and /admin. They point at the warm palette so
+   * those pages inherit it; remove each one once nothing references it.
+   */
+  --color-navy: #1c1b18;
+  --color-navy-strong: #34322c;
+  --color-plate: #fcfbf8;
+  --color-steel: #e7e1d5;
+  --color-edge: #857e71;
+  --color-tile: #f1ece2;
+  --color-on-navy: #d9d3c7;
+  --color-signal: #e8c14a;
+  --color-free: #2f5e47;
+  --color-dock: #e8c14a;
 }
 
-/* Small uppercase tracked label, like the lettering on a station sign. */
+/* Form label: sentence case, semibold. */
+@utility field-label {
+  font-size: var(--text-label);
+  line-height: var(--text-label--line-height);
+  font-weight: 600;
+}
+/* Legacy name for the same label style, still used by the admin table. */
 @utility label-caps {
   font-size: var(--text-label);
   line-height: var(--text-label--line-height);
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-weight: 600;
 }
 
 html {
   font-family: var(--font-sans);
-  accent-color: var(--color-navy);
-  caret-color: var(--color-navy);
-  scrollbar-color: var(--color-edge) transparent;
+  accent-color: var(--color-ink);
+  caret-color: var(--color-ink);
+  scrollbar-color: var(--color-field) transparent;
+  -webkit-font-smoothing: antialiased;
 }
 
 body {
@@ -64,17 +110,17 @@ body {
 }
 
 ::selection {
-  background: #f1d9a8;
-  color: var(--color-navy);
+  background: var(--color-mustard-tint);
+  color: var(--color-ink);
 }
 
 a {
   text-underline-offset: 3px;
 }
 
-/* Visible keyboard focus on everything interactive; white on the navy bar. */
+/* Visible keyboard focus on everything interactive: ink ring with a gap, clear on cream and on mustard. */
 :focus-visible {
-  outline: 2px solid var(--color-navy);
+  outline: 2px solid var(--color-ink);
   outline-offset: 2px;
 }
 .on-navy :focus-visible {

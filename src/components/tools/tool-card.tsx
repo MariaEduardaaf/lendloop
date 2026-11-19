@@ -1,8 +1,11 @@
+import Link from "next/link";
 import { CATEGORY_LABELS, CONDITION_LABELS } from "@/lib/labels";
 import type { ToolRow } from "@/lib/types";
 import { AvailabilityStrip } from "../availability-strip";
+import { Avatar } from "../avatar";
+import { quietLinkButtonClass } from "../button";
 import { CategoryGlyph } from "../category-glyph";
-import { Initial, TrustedSeal } from "../trusted-seal";
+import { TrustedSeal } from "../trusted-seal";
 import { RequestForm } from "./request-form";
 
 /**
@@ -11,34 +14,29 @@ import { RequestForm } from "./request-form";
  */
 export function ToolCard({ tool, today }: { tool: ToolRow; today: string }) {
   return (
-    <li className="rounded-md border border-steel bg-plate p-4 shadow-[0_1px_2px_rgba(29,43,58,0.08)]">
-      <div className="flex items-start gap-3">
+    <li className="flex flex-col rounded-card bg-surface p-5 shadow-soft sm:p-6">
+      <div className="flex items-center gap-3.5">
         <CategoryGlyph category={tool.category} />
         <div className="min-w-0">
-          <h3 className="text-h3 font-bold break-words">{tool.name}</h3>
-          <p className="text-sm text-muted">
-            {CATEGORY_LABELS[tool.category]}
-            <span aria-hidden="true" className="mx-2 inline-block size-1 rounded-full bg-current align-middle" />
-            {CONDITION_LABELS[tool.condition]} condition
+          <h3 className="text-h3 font-bold tracking-[-0.01em] break-words">{tool.name}</h3>
+          <p className="mt-0.5 text-[0.9375rem] text-muted">
+            {CATEGORY_LABELS[tool.category]} · {CONDITION_LABELS[tool.condition]}
+            <span className="sr-only"> condition</span>
           </p>
         </div>
       </div>
-      <p className="mt-3 line-clamp-2 text-sm break-words text-muted">{tool.description}</p>
-      <div className="mt-4">
+      {tool.description && <p className="mt-4 line-clamp-2 text-[0.9375rem] break-words text-muted">{tool.description}</p>}
+      <div className="mt-5">
         <AvailabilityStrip today={today} availability={tool} />
       </div>
-      <div className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-3 border-t border-steel pt-3">
-        {tool.isMine ? (
-          <span className="text-sm font-semibold">You</span>
-        ) : (
-          <>
-            <Initial name={tool.ownerFirstName} />
-            <span className="text-sm">{tool.ownerFirstName}</span>
-          </>
-        )}
+      <div className="mt-5 flex flex-wrap items-center gap-x-2.5 gap-y-3 border-t border-line pt-4">
+        <Avatar name={tool.ownerFirstName} />
+        <span className="text-[0.9375rem] font-semibold">{tool.isMine ? "You" : tool.ownerFirstName}</span>
         {tool.ownerTrustedLender && <TrustedSeal />}
         {tool.isMine ? (
-          <span className="ml-auto text-sm font-semibold text-muted">Your tool</span>
+          <Link href="/listings" className={`${quietLinkButtonClass} ml-auto`}>
+            Manage<span className="sr-only"> {tool.name} in My listings</span>
+          </Link>
         ) : (
           <RequestForm toolId={tool._id} toolName={tool.name} today={today} availability={tool} />
         )}

@@ -2,13 +2,17 @@
 
 import Link from "next/link";
 import { useMutation } from "convex/react";
+import { ArrowUpRight, Check, Clock, Hourglass, Mail } from "lucide-react";
 import { api } from "@convex/_generated/api";
+import { activityText } from "@/lib/activity";
 import { formatLoanDates, plural } from "@/lib/format";
 import { loanStage } from "@/lib/loan-stage";
 import type { IncomingRow } from "@/lib/types";
 import { ActionButton } from "../action-button";
+import { Avatar } from "../avatar";
 import { ConfirmAction } from "../confirm-action";
 import { BorrowerContext } from "../loans/borrower-context";
+import { StageLabel } from "../loans/stage-label";
 
 const SHOWN = 2;
 
@@ -25,84 +29,131 @@ export function railLoans(loans: IncomingRow[], today: string) {
   };
 }
 
+/** Round link to the full card on Incoming requests. */
+function OpenLink({ name, onMustard }: { name: string; onMustard?: boolean }) {
+  return (
+    <Link
+      href="/incoming"
+      className={`grid size-10 shrink-0 place-items-center rounded-full text-ink transition-colors duration-150 ease-out ${
+        onMustard ? "bg-white/45 hover:bg-white/70" : "bg-soft hover:bg-soft-strong"
+      }`}
+    >
+      <ArrowUpRight aria-hidden="true" className="size-[18px]" strokeWidth={1.75} />
+      <span className="sr-only">Open {name} in Incoming requests</span>
+    </Link>
+  );
+}
+
 /**
  * The viewer's own side of the board: requests on their tools waiting for an answer, and their
- * tools that are out now (late first). Only the viewer sees these, the plates never name borrowers.
+ * tools that are out now (late first). Only the viewer sees these, the tool cards never name borrowers.
  */
 export function BoardRail({ waiting, out }: { waiting: Staged[]; out: Staged[] }) {
   const approve = useMutation(api.loans.approve);
   const decline = useMutation(api.loans.decline);
 
   const late = out.filter((s) => s.stage.key === "late").length;
-  // Below lg the rail would push every plate below the fold, so phones get one line per group.
-  const summary: string[] = [];
-  if (waiting.length) summary.push(`${plural(waiting.length, "request")} ${waiting.length === 1 ? "needs" : "need"} your answer`);
-  if (out.length) summary.push(`${plural(out.length, "tool")} out now${late ? `, ${late} late` : ""}`);
+  // Below lg the column would push every tool below the fold, so phones get one line per group.
+  const summary: { text: string; urgent: boolean }[] = [];
+  if (waiting.length)
+    summary.push({ text: `${plural(waiting.length, "request")} ${waiting.length === 1 ? "needs" : "need"} your answer`, urgent: true });
+  if (out.length) summary.push({ text: `${plural(out.length, "tool")} out now${late ? `, ${late} late` : ""}`, urgent: false });
 
   return (
     <>
-      <nav aria-label="Your loans" className="divide-y divide-steel rounded-md border border-steel bg-plate lg:hidden">
-        {summary.map((line) => (
-          <Link key={line} href="/incoming" className="block px-4 py-3 text-sm font-semibold underline decoration-edge hover:decoration-navy">
-            {line}
+      <nav aria-label="Your loans" className="grid gap-2 sm:grid-cols-2 lg:hidden">
+        {summary.map(({ text, urgent }) => (
+          <Link
+            key={text}
+            href="/incoming"
+            className={`flex min-h-14 items-center gap-3 rounded-[1.375rem] px-5 py-3 font-semibold shadow-soft transition-colors duration-150 ease-out ${
+              urgent ? "bg-mustard text-ink hover:bg-[#e2b93d]" : "bg-surface text-ink hover:bg-soft"
+            }`}
+          >
+            {urgent ? (
+              <Hourglass aria-hidden="true" className="size-[18px] shrink-0" strokeWidth={1.75} />
+            ) : (
+              <Clock aria-hidden="true" className="size-[18px] shrink-0" strokeWidth={1.75} />
+            )}
+            <span className="flex-1">{text}</span>
+            <ArrowUpRight aria-hidden="true" className="size-[18px] shrink-0" strokeWidth={1.75} />
           </Link>
         ))}
       </nav>
-      <aside aria-label="Your loans" className="hidden space-y-4 lg:sticky lg:top-6 lg:block">
-        {waiting.length > 0 && (
-          <section aria-labelledby="rail-answer" className="rounded-md border border-steel bg-plate p-5">
-            <h2 id="rail-answer" className="flex items-baseline gap-2 text-h2 font-bold">
-              Needs your answer <span className="text-base font-semibold text-muted">{waiting.length}</span>
-            </h2>
-            <ul className="mt-4 divide-y divide-steel">
-              {waiting.slice(0, SHOWN).map(({ loan }) => (
-                <li key={loan._id} className="space-y-3 py-4 first:pt-0 last:pb-0">
-                  <div>
-                    <h3 className="text-h3 font-bold">
-                      {loan.borrowerFirstName} wants your {loan.toolName}
-                    </h3>
-                    <p className="mt-1 text-sm text-muted">{formatLoanDates(loan.startDate, loan.endDate)}</p>
-                  </div>
-                  <BorrowerContext loan={loan} />
-                  <div className="flex flex-wrap items-start gap-2">
-                    <ActionButton variant="primary" label="Approve" onClick={() => approve({ loanId: loan._id })} />
-                    <ConfirmAction
-                      label="Decline"
-                      prompt={`Decline ${loan.borrowerFirstName}'s request?`}
-                      confirmLabel="Yes, decline"
-                      onConfirm={() => decline({ loanId: loan._id })}
-                    />
-                  </div>
-                </li>
-              ))}
-            </ul>
-            {waiting.length > SHOWN && (
-              <Link href="/incoming" className="mt-4 block text-sm font-semibold underline">
+      <aside aria-labelledby="rail-heading" className="hidden lg:block">
+        <h2 id="rail-heading" className="text-h2 font-bold tracking-[-0.02em] lg:mt-[2.375rem]">
+          Your loans
+        </h2>
+        <p className="mt-3 text-lg text-muted">Your tools that are out or asked for.</p>
+        <ul className="mt-7 space-y-4">
+          {waiting.slice(0, SHOWN).map(({ loan }) => (
+            <li key={loan._id} className="rounded-[1.875rem] bg-mustard p-6 text-ink shadow-soft">
+              <div className="flex items-center justify-between gap-3">
+                <StageLabel stageKey="pending" side="owner" />
+                <OpenLink name={`${loan.borrowerFirstName}'s request`} onMustard />
+              </div>
+              <h3 className="mt-[18px] text-2xl leading-tight font-bold tracking-[-0.015em]">
+                {loan.borrowerFirstName} wants your {loan.toolName}
+              </h3>
+              <p className="mt-1.5 font-medium text-mustard-ink">{formatLoanDates(loan.startDate, loan.endDate)}</p>
+              <div className="mt-4 flex items-center gap-2.5 text-[0.9375rem] font-semibold text-mustard-ink">
+                <Avatar name={loan.borrowerFirstName} />
+                <BorrowerContext loan={loan} onMustard />
+              </div>
+              <div className="mt-[22px] flex flex-wrap items-start gap-2.5">
+                <ActionButton
+                  variant="primary"
+                  size="lg"
+                  icon={<Check aria-hidden="true" className="size-5" strokeWidth={2} />}
+                  label="Approve"
+                  onClick={() => approve({ loanId: loan._id })}
+                />
+                <ConfirmAction
+                  variant="outline"
+                  size="lg"
+                  label="Decline"
+                  prompt={`Decline ${loan.borrowerFirstName}'s request?`}
+                  confirmLabel="Yes, decline"
+                  onConfirm={() => decline({ loanId: loan._id })}
+                />
+              </div>
+            </li>
+          ))}
+          {waiting.length > SHOWN && (
+            <li>
+              <Link href="/incoming" className="mx-1.5 block font-semibold underline">
                 See all {waiting.length} in Incoming requests
               </Link>
-            )}
-          </section>
-        )}
-        {out.length > 0 && (
-          <section aria-labelledby="rail-out" className="rounded-md border border-steel bg-plate p-5">
-            <h2 id="rail-out" className="flex items-baseline gap-2 text-h2 font-bold">
-              Out now <span className="text-base font-semibold text-muted">{out.length}</span>
-            </h2>
-            <ul className="mt-4 space-y-3">
-              {out.map(({ loan, stage }) => (
-                <li key={loan._id} className="text-sm">
-                  <span className="font-semibold">{loan.toolName}</span>
-                  <span className={`block ${stage.key === "late" ? "font-semibold text-late" : "text-muted"}`}>
-                    {stage.key === "late" ? `With ${loan.borrowerFirstName}, ${stage.text}` : stage.text}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            <Link href="/incoming" className="mt-4 block text-sm font-semibold underline">
-              Manage in Incoming requests
-            </Link>
-          </section>
-        )}
+            </li>
+          )}
+          {out.map(({ loan, stage }) => (
+            <li key={loan._id} className="rounded-[1.875rem] bg-surface px-6 py-5 shadow-soft">
+              <div className="flex items-center justify-between gap-3">
+                <StageLabel stageKey={stage.key} side="owner" />
+                <OpenLink name={loan.toolName} />
+              </div>
+              <h3 className="mt-3.5 text-[1.3125rem] leading-tight font-bold tracking-[-0.015em]">{loan.toolName}</h3>
+              <p className="mt-1.5 font-medium text-muted">
+                {stage.key === "late" ? (
+                  <>
+                    With {loan.borrowerFirstName} · <span className="font-semibold text-late">{stage.text}</span>
+                  </>
+                ) : (
+                  stage.text
+                )}
+              </p>
+              {stage.key === "late" && loan.activity[0] && (
+                <p className="mt-4 flex items-center gap-2.5 text-[0.9375rem] font-semibold text-muted">
+                  <Mail aria-hidden="true" className="size-5 shrink-0" strokeWidth={1.75} />
+                  {activityText(loan.activity[0], loan, "owner")}
+                </p>
+              )}
+            </li>
+          ))}
+        </ul>
+        <p className="mt-5 px-1.5 text-sm text-muted">
+          Only you and the borrower see who has your tool. Everyone else sees free and busy days.
+        </p>
       </aside>
     </>
   );

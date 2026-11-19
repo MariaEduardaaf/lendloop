@@ -1,31 +1,40 @@
 import type { ComponentProps } from "react";
 
-type Variant = "primary" | "secondary" | "inverse";
+type Variant = "primary" | "secondary" | "outline" | "inverse";
+type Size = "md" | "lg";
 
-// Navy fill is the one solid action per decision; everything else is outlined.
+// Solid ink is the one primary per decision; soft fill is the quiet secondary; the outline is
+// the secondary on the mustard card, where a soft fill would vanish.
 const VARIANTS: Record<Variant, string> = {
-  primary: "bg-navy text-white hover:bg-navy-strong",
-  secondary: "border border-navy bg-plate text-navy hover:bg-tile",
-  // The solid action on a navy surface (the landing bar and closing band).
-  inverse: "bg-plate text-navy hover:bg-tile",
+  primary: "bg-ink text-white hover:bg-ink-strong",
+  secondary: "bg-soft text-ink hover:bg-soft-strong",
+  outline: "bg-transparent text-ink shadow-[inset_0_0_0_1.5px_rgb(28_27_24/0.35)] hover:bg-white/30",
+  // The solid action on a dark band (the landing page).
+  inverse: "bg-surface text-ink hover:bg-soft",
+};
+
+const SIZES: Record<Size, string> = {
+  md: "min-h-10 px-[18px] text-[0.9375rem]",
+  lg: "min-h-[3.25rem] px-7 text-base",
 };
 
 const BASE =
-  "inline-flex min-h-10 items-center justify-center rounded-md px-4 text-sm font-semibold transition-colors";
+  "inline-flex items-center justify-center gap-2 rounded-full font-bold whitespace-nowrap transition-[background-color,box-shadow,color] duration-150 ease-out";
 
-type Props = ComponentProps<"button"> & { variant?: Variant };
+type Props = ComponentProps<"button"> & { variant?: Variant; size?: Size };
 
 /** Shared button look. Always a real <button>; type defaults to "button" so forms only submit on purpose. */
-export function Button({ variant = "primary", className = "", type = "button", ...rest }: Props) {
+export function Button({ variant = "primary", size = "md", className = "", type = "button", ...rest }: Props) {
   return (
     <button
       type={type}
-      className={`${BASE} disabled:cursor-not-allowed disabled:opacity-50 ${VARIANTS[variant]} ${className}`}
+      className={`${BASE} disabled:cursor-not-allowed disabled:opacity-50 ${SIZES[size]} ${VARIANTS[variant]} ${className}`}
       {...rest}
     />
   );
 }
 
 /** Same look for a Next <Link>, so a navigation action matches the buttons. */
-export const linkButtonClass = `${BASE} ${VARIANTS.primary}`;
-export const inverseLinkButtonClass = `${BASE} ${VARIANTS.inverse}`;
+export const linkButtonClass = `${BASE} ${SIZES.md} ${VARIANTS.primary}`;
+export const quietLinkButtonClass = `${BASE} ${SIZES.md} ${VARIANTS.secondary}`;
+export const inverseLinkButtonClass = `${BASE} ${SIZES.md} ${VARIANTS.inverse}`;

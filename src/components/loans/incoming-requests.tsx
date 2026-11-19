@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMutation, useQuery } from "convex/react";
+import { Check } from "lucide-react";
 import { api } from "@convex/_generated/api";
 import { loanStage, type Stage } from "@/lib/loan-stage";
 import type { IncomingRow } from "@/lib/types";
@@ -44,12 +45,21 @@ export function IncomingRequests() {
     switch (stage.key) {
       case "pending":
       case "expired":
+        // A pending request is the mustard card: big ink Approve, outlined Decline.
         return (
           <>
             {stage.key === "pending" && (
-              <ActionButton variant="primary" label="Approve" onClick={() => approve({ loanId: loan._id })} />
+              <ActionButton
+                variant="primary"
+                size="lg"
+                icon={<Check aria-hidden="true" className="size-5" strokeWidth={2} />}
+                label="Approve"
+                onClick={() => approve({ loanId: loan._id })}
+              />
             )}
             <ConfirmAction
+              variant={stage.key === "pending" ? "outline" : "secondary"}
+              size={stage.key === "pending" ? "lg" : "md"}
               label="Decline"
               prompt={`Decline ${name}'s request?`}
               confirmLabel="Yes, decline"
@@ -90,7 +100,7 @@ export function IncomingRequests() {
     { id: "past", title: "Past", items: groups.past },
   ];
   return (
-    <div className="grid items-start gap-x-8 gap-y-10 lg:grid-cols-2">
+    <div className="grid items-start gap-x-10 gap-y-12 lg:grid-cols-2">
       {sections.map(({ id, title, items }) => (
         <LoanSection key={id} id={`incoming-${id}`} title={title} count={items.length}>
           {items.map(({ loan, stage }) => (
@@ -99,8 +109,8 @@ export function IncomingRequests() {
               loan={loan}
               side="owner"
               stage={stage}
-              people={`Borrower: ${loan.borrowerFirstName}`}
-              context={stage.key === "pending" && <BorrowerContext loan={loan} />}
+              person={{ label: "Borrower", name: loan.borrowerFirstName }}
+              context={stage.key === "pending" && <BorrowerContext loan={loan} onMustard />}
               actions={actions(loan, stage)}
             />
           ))}

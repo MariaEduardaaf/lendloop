@@ -23,10 +23,13 @@ export function LoanSection({ id, title, count, children }: { id: string; title:
   if (count === 0) return null;
   return (
     <section aria-labelledby={id}>
-      <h2 id={id} className="flex items-baseline gap-2 text-h2 font-bold">
-        {title} <span className="text-base font-semibold text-muted">{count}</span>
+      <h2 id={id} className="mx-1 flex items-center gap-3 text-h2 font-bold tracking-[-0.02em]">
+        {title}{" "}
+        <span className="grid h-7 min-w-7 place-items-center rounded-full bg-surface px-2.5 text-[0.9375rem] font-bold text-muted shadow-soft">
+          {count}
+        </span>
       </h2>
-      <ul className="mt-3 space-y-4">{children}</ul>
+      <ul className="mt-4 space-y-4">{children}</ul>
     </section>
   );
 }

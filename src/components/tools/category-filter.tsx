@@ -1,14 +1,14 @@
 import { CATEGORIES, CATEGORY_LABELS, type Category } from "@/lib/labels";
 
-/** Toggle chip look, shared with the admin loan filters. */
+/** Toggle pill look, shared with the admin loan filters. Selected is the ink pill. */
 export const chipClass = (selected: boolean) =>
-  `min-h-9 shrink-0 rounded-full border px-4 text-sm font-semibold transition-colors ${
-    selected ? "border-navy bg-navy text-white" : "border-edge bg-plate text-ink hover:bg-tile"
+  `h-10 shrink-0 rounded-full px-[18px] text-[0.9375rem] font-semibold whitespace-nowrap transition-colors duration-150 ease-out ${
+    selected ? "bg-ink text-white" : "bg-surface text-ink shadow-[inset_0_0_0_1px_var(--color-line)] hover:bg-soft"
   }`;
 
 type Props = { value: Category | null; onChange: (value: Category | null) => void };
 
-/** Category chips. Each one is a toggle button, "All" clears the filter. One scrollable row on phones. */
+/** Category pills. Each one is a toggle button, "All" clears the filter. One scrollable row on phones. */
 export function CategoryFilter({ value, onChange }: Props) {
   const chips: { label: string; category: Category | null }[] = [
     { label: "All", category: null },

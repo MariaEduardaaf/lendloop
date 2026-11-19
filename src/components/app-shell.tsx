@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { UserButton } from "@clerk/nextjs";
+import { Infinity as LoopMark } from "lucide-react";
 import { api } from "@convex/_generated/api";
 import { errorMessage } from "@/lib/errors";
 import { ErrorText, Loading } from "./feedback";
@@ -13,7 +14,7 @@ const NAV = [
   { href: "/tools", label: "Tools" },
   { href: "/listings", label: "My listings" },
   { href: "/requests", label: "My requests" },
-  { href: "/incoming", label: "Incoming requests" },
+  { href: "/incoming", label: "Incoming" },
 ];
 
 function NavLink({ href, label, count = 0 }: { href: string; label: string; count?: number }) {
@@ -22,14 +23,18 @@ function NavLink({ href, label, count = 0 }: { href: string; label: string; coun
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
-      className={`flex shrink-0 items-center gap-2 border-b-[3px] px-3 pt-[3px] text-sm font-semibold whitespace-nowrap transition-colors ${
-        active ? "border-signal text-white" : "border-transparent text-on-navy hover:text-white"
+      className={`flex h-[42px] shrink-0 items-center gap-2 rounded-full px-4 text-[0.9375rem] font-semibold whitespace-nowrap transition-colors duration-150 ease-out sm:px-5 ${
+        active ? "bg-ink text-white" : "text-muted hover:bg-soft hover:text-ink"
       }`}
     >
       {label}
+      {href === "/incoming" && <span className="sr-only"> requests</span>}
       {count > 0 && (
         <>
-          <span aria-hidden="true" className="grid h-5 min-w-5 place-items-center rounded-full bg-dock px-1.5 text-xs font-bold text-navy">
+          <span
+            aria-hidden="true"
+            className="grid h-[22px] min-w-[22px] place-items-center rounded-full bg-mustard px-1.5 text-[0.8125rem] font-bold text-ink"
+          >
             {count}
           </span>
           <span className="sr-only">, {count} waiting for your answer</span>
@@ -40,8 +45,8 @@ function NavLink({ href, label, count = 0 }: { href: string; label: string; coun
 }
 
 /**
- * Navy station bar and navigation for the signed-in area. It creates or refreshes the user's
- * Convex row once per visit (`users.store` never changes the role, so repeating it is
+ * Cream top bar with the floating pill navigation for the signed-in area. It creates or refreshes
+ * the user's Convex row once per visit (`users.store` never changes the role, so repeating it is
  * harmless) and renders the page only once that row exists, so page queries never hit
  * "account still being set up".
  */
@@ -65,43 +70,34 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="min-h-screen">
       <a
         href="#main"
-        className="sr-only z-10 rounded-md bg-plate px-4 py-2 font-semibold text-navy focus:not-sr-only focus:absolute focus:top-3 focus:left-3"
+        className="sr-only z-10 rounded-full bg-ink px-5 py-2.5 font-bold text-white focus:not-sr-only focus:absolute focus:top-3 focus:left-3"
       >
         Skip to content
       </a>
-      <header className="on-navy bg-navy text-white">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-stretch justify-between gap-x-8 px-4 sm:flex-nowrap sm:px-6">
-          <Link href="/tools" className="flex h-14 items-center text-xl font-bold tracking-tight sm:h-15">
-            LendLoop
-          </Link>
-          <nav
-            aria-label="Main"
-            className="order-last -mx-4 flex h-12 border-t border-white/10 sm:border-t-0 w-[calc(100%+2rem)] overflow-x-auto px-1 sm:order-none sm:mx-0 sm:mr-auto sm:h-auto sm:w-auto sm:px-0"
-          >
-            {NAV.map((item) => (
-              <NavLink key={item.href} {...item} count={item.href === "/incoming" ? waiting : 0} />
-            ))}
-            {me?.role === "admin" && <NavLink href="/admin" label="Admin" />}
-          </nav>
-          <div className="flex items-center gap-4">
-            {/* The nav row scrolls on phones, so the waiting count also sits up here, always in view. */}
-            {waiting ? (
-              <Link
-                href="/incoming"
-                aria-label={`Incoming requests, ${waiting} waiting`}
-                className="flex items-center gap-2 text-sm font-semibold text-on-navy hover:text-white sm:hidden"
-              >
-                Incoming
-                <span aria-hidden="true" className="grid h-5 min-w-5 place-items-center rounded-full bg-dock px-1.5 text-xs font-bold text-navy">
-                  {waiting}
-                </span>
-              </Link>
-            ) : null}
-            <UserButton />
-          </div>
+      <header className="mx-auto grid max-w-[90rem] grid-cols-[1fr_auto] items-center gap-x-4 gap-y-4 px-4 pt-4 sm:px-8 sm:pt-7 lg:grid-cols-[1fr_auto_1fr] xl:px-14">
+        <Link href="/tools" className="flex w-fit items-center gap-3 text-[1.375rem] font-bold tracking-[-0.01em]">
+          <span aria-hidden="true" className="grid size-10 place-items-center rounded-xl bg-ink text-white">
+            <LoopMark className="size-[22px]" strokeWidth={1.75} />
+          </span>
+          LendLoop
+        </Link>
+        {/* Below lg the pills take their own row and wrap, so no tab or the waiting count is ever hidden. */}
+        <nav
+          aria-label="Main"
+          className="col-span-2 row-start-2 flex flex-wrap justify-center gap-1 rounded-[1.625rem] bg-surface p-[5px] shadow-soft sm:w-fit sm:justify-self-center sm:rounded-full lg:col-span-1 lg:col-start-2 lg:row-start-1"
+        >
+          {NAV.map((item) => (
+            <NavLink key={item.href} {...item} count={item.href === "/incoming" ? waiting : 0} />
+          ))}
+          {me?.role === "admin" && <NavLink href="/admin" label="Admin" />}
+        </nav>
+        <div className="flex justify-self-end">
+          <UserButton
+            appearance={{ elements: { avatarBox: "size-11 shadow-[0_0_0_3px_var(--color-surface),var(--shadow-soft)]" } }}
+          />
         </div>
       </header>
-      <main id="main" tabIndex={-1} className="mx-auto max-w-6xl px-4 py-8 focus:outline-none sm:px-6">
+      <main id="main" tabIndex={-1} className="mx-auto max-w-[90rem] px-4 pt-8 pb-16 focus:outline-none sm:px-8 lg:pt-11 xl:px-14">
         {body}
       </main>
     </div>

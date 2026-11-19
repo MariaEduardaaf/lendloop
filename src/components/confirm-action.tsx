@@ -11,13 +11,16 @@ type Props = {
   prompt: string;
   confirmLabel: string;
   onConfirm: () => Promise<unknown>;
+  /** "outline" on the mustard card, where the soft fill would not show. */
+  variant?: "secondary" | "outline";
+  size?: "md" | "lg";
 };
 
 /**
  * A destructive action with an inline "Are you sure?" step (no browser confirm dialog).
  * First click shows the question, second click runs it. Backend errors appear below.
  */
-export function ConfirmAction({ label, prompt, confirmLabel, onConfirm }: Props) {
+export function ConfirmAction({ label, prompt, confirmLabel, onConfirm, variant = "secondary", size }: Props) {
   const [asking, setAsking] = useState(false);
   const { pending, error, run } = useAction();
   const { revealedRef, triggerRef } = useRevealFocus<HTMLParagraphElement>(asking);
@@ -29,7 +32,7 @@ export function ConfirmAction({ label, prompt, confirmLabel, onConfirm }: Props)
   if (!asking) {
     return (
       <div className="space-y-2">
-        <Button ref={triggerRef} variant="secondary" onClick={() => setAsking(true)}>
+        <Button ref={triggerRef} variant={variant} size={size} onClick={() => setAsking(true)}>
           {label}
         </Button>
         <ErrorText message={error} />
@@ -37,15 +40,15 @@ export function ConfirmAction({ label, prompt, confirmLabel, onConfirm }: Props)
     );
   }
   return (
-    <div className="space-y-2" role="group" aria-label={prompt}>
-      <p ref={revealedRef} tabIndex={-1} className="text-sm font-semibold">
+    <div className="basis-full space-y-3" role="group" aria-label={prompt}>
+      <p ref={revealedRef} tabIndex={-1} className="font-semibold">
         {prompt}
       </p>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Button onClick={confirm} disabled={pending}>
           {pending ? "Working..." : confirmLabel}
         </Button>
-        <Button variant="secondary" onClick={() => setAsking(false)} disabled={pending}>
+        <Button variant={variant} onClick={() => setAsking(false)} disabled={pending}>
           Keep it
         </Button>
       </div>

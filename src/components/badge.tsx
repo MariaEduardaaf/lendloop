@@ -2,18 +2,18 @@ import type { ReactNode } from "react";
 
 type Tone = "neutral" | "good" | "warn" | "accent";
 
-// Words carry the meaning; the edge colour only supports it.
+// Words carry the meaning; the fill only supports it.
 const TONES: Record<Tone, string> = {
-  neutral: "border-edge text-ink",
-  good: "border-free text-free",
-  warn: "border-dock text-ink",
-  accent: "border-navy text-navy",
+  neutral: "bg-soft text-ink",
+  good: "bg-moss-tint text-moss",
+  warn: "bg-mustard-tint text-ink",
+  accent: "bg-ink text-white",
 };
 
-/** Small text label. Meaning is always in the words, the color only supports it. */
+/** Small pill label. Meaning is always in the words, the colour only supports it. */
 export function Badge({ tone = "neutral", children }: { tone?: Tone; children: ReactNode }) {
   return (
-    <span className={`inline-flex items-center rounded-sm border bg-plate px-1.5 text-xs leading-5 font-semibold ${TONES[tone]}`}>
+    <span className={`inline-flex h-7 items-center gap-1.5 rounded-full px-3 text-[0.8125rem] font-bold whitespace-nowrap ${TONES[tone]}`}>
       {children}
     </span>
   );

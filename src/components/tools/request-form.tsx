@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { useMutation } from "convex/react";
+import { CircleCheck } from "lucide-react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { bookedText, type ToolAvailability } from "@/lib/availability";
@@ -47,12 +48,15 @@ export function RequestForm({ toolId, toolName, today, availability }: Props) {
 
   if (sent) {
     return (
-      <p role="status" className="basis-full text-sm">
-        Request sent. Follow it in{" "}
-        <Link href="/requests" className="font-semibold underline">
-          My requests
-        </Link>
-        .
+      <p role="status" className="flex basis-full items-start gap-2 rounded-2xl bg-moss-tint px-4 py-3 text-[0.9375rem] font-medium text-ink">
+        <CircleCheck aria-hidden="true" className="mt-0.5 size-[18px] shrink-0 text-moss" strokeWidth={2} />
+        <span>
+          Request sent. Follow it in{" "}
+          <Link href="/requests" className="font-bold underline">
+            My requests
+          </Link>
+          .
+        </span>
       </p>
     );
   }
@@ -65,8 +69,8 @@ export function RequestForm({ toolId, toolName, today, availability }: Props) {
   }
 
   return (
-    <form onSubmit={submit} aria-label={`Request ${toolName}`} className="basis-full space-y-3">
-      {booked && <p className="text-sm font-semibold">{booked}</p>}
+    <form onSubmit={submit} aria-label={`Request ${toolName}`} className="mt-1 basis-full space-y-4 rounded-[1.375rem] bg-soft p-4">
+      {booked && <p className="text-[0.9375rem] font-semibold">{booked}</p>}
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="From">
           <input
@@ -92,11 +96,11 @@ export function RequestForm({ toolId, toolName, today, availability }: Props) {
           />
         </Field>
       </div>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Button type="submit" disabled={pending}>
           {pending ? "Sending..." : "Send request"}
         </Button>
-        <Button variant="secondary" onClick={() => setOpen(false)} disabled={pending}>
+        <Button variant="outline" onClick={() => setOpen(false)} disabled={pending}>
           Cancel
         </Button>
       </div>

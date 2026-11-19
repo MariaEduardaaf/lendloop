@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useMutation } from "convex/react";
+import { ArrowUpRight, Hourglass, Pencil } from "lucide-react";
 import { api } from "@convex/_generated/api";
 import { plural } from "@/lib/format";
 import { CATEGORY_LABELS, CONDITION_LABELS } from "@/lib/labels";
@@ -14,7 +15,7 @@ import { CategoryGlyph } from "../category-glyph";
 import { ConfirmAction } from "../confirm-action";
 import { ToolForm } from "./tool-form";
 
-const plate = "rounded-md border border-steel bg-plate p-4 shadow-[0_1px_2px_rgba(29,43,58,0.08)]";
+const card = "flex flex-col rounded-card bg-surface p-5 shadow-soft sm:p-6";
 
 /** One of my listings: details and the next 14 days, or the edit form in place. Delete asks inline first. */
 export function ListingCard({ listing, today }: { listing: ListingRow; today: string }) {
@@ -26,8 +27,8 @@ export function ListingCard({ listing, today }: { listing: ListingRow; today: st
 
   if (editing) {
     return (
-      <li className={plate}>
-        <h3 className="mb-4 text-h3 font-bold">Edit {listing.name}</h3>
+      <li className={card}>
+        <h3 className="mb-5 text-h3 font-bold tracking-[-0.01em]">Edit {listing.name}</h3>
         <ToolForm
           initial={{
             name: listing.name,
@@ -43,30 +44,34 @@ export function ListingCard({ listing, today }: { listing: ListingRow; today: st
     );
   }
   return (
-    <li className={plate}>
-      <div className="flex items-start gap-3">
+    <li className={card}>
+      <div className="flex items-center gap-3.5">
         <CategoryGlyph category={listing.category} />
         <div className="min-w-0">
-          <h3 className="text-h3 font-bold break-words">{listing.name}</h3>
-          <p className="text-sm text-muted">
-            {CATEGORY_LABELS[listing.category]}
-            <span aria-hidden="true" className="mx-2 inline-block size-1 rounded-full bg-current align-middle" />
-            {CONDITION_LABELS[listing.condition]} condition
+          <h3 className="text-h3 font-bold tracking-[-0.01em] break-words">{listing.name}</h3>
+          <p className="mt-0.5 text-[0.9375rem] text-muted">
+            {CATEGORY_LABELS[listing.category]} · {CONDITION_LABELS[listing.condition]}
+            <span className="sr-only"> condition</span>
           </p>
         </div>
       </div>
-      <p className="mt-3 line-clamp-2 text-sm break-words whitespace-pre-line text-muted">{listing.description}</p>
-      <div className="mt-4">
+      <p className="mt-4 line-clamp-2 text-[0.9375rem] break-words whitespace-pre-line text-muted">{listing.description}</p>
+      <div className="mt-5">
         <AvailabilityStrip today={today} availability={listing} />
       </div>
       {listing.pendingCount > 0 && (
-        <Link href="/incoming" className="mt-3 inline-flex items-center gap-2 text-sm font-semibold underline">
-          <span aria-hidden="true" className="size-3 rounded-[2px] border-[1.5px] border-dashed border-dock" />
+        <Link
+          href="/incoming"
+          className="mt-4 inline-flex w-fit items-center gap-2 rounded-full bg-mustard px-4 py-2 text-[0.9375rem] font-bold text-ink transition-colors duration-150 ease-out hover:bg-[#e2b93d]"
+        >
+          <Hourglass aria-hidden="true" className="size-4" strokeWidth={2} />
           {plural(listing.pendingCount, "request")} waiting
+          <ArrowUpRight aria-hidden="true" className="size-4" strokeWidth={2} />
         </Link>
       )}
-      <div className="mt-4 flex flex-wrap items-start gap-2 border-t border-steel pt-3">
+      <div className="mt-5 flex flex-wrap items-start gap-2.5 border-t border-line pt-4">
         <Button ref={triggerRef} variant="secondary" onClick={() => setEditing(true)}>
+          <Pencil aria-hidden="true" className="size-4" strokeWidth={2} />
           Edit<span className="sr-only"> {listing.name}</span>
         </Button>
         <ConfirmAction
